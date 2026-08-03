@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.2 — 2026-07-29
+
+- Reverted 1.7.1: the login screen logo is back to its previous
+  32px inline size next to the app name.
+
 ## 1.7.1 — 2026-07-29
 
 - The login screen now shows the logo at its original size (192px),
