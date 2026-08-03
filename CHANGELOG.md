@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.1 — 2026-07-29
+
+- The login screen now shows the logo at its original size (192px),
+  centered above the app name — it was previously scaled down to a
+  32px inline icon next to the title.
+
 ## 1.6.0 — 2026-07-28
 
 - Added the OCI `org.opencontainers.image.source` label to the
