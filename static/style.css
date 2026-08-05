@@ -75,7 +75,15 @@ body {
   background: var(--bg-canvas);
   color: var(--text);
   font-size: 15px;
+  /* 100vh is the *largest* possible viewport on mobile - it includes
+     the strip behind the browser's collapsible address bar. Paired
+     with overflow: hidden, that strip swallows anything pinned near
+     the bottom of the screen (the FAB) whenever the address bar is
+     visible, which on a real phone is most of the time. 100dvh tracks
+     the actual visible viewport; the plain 100vh above is the
+     fallback for browsers that don't support dvh yet. */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -592,6 +600,11 @@ button {
    attribute rule must exist or `display: flex` above wins the tie and
    the bar never hides in Markdown mode. */
 .format-bar[hidden] { display: none; }
+/* Same tie, same fix: .editor's own display: flex (below) otherwise
+   beats [hidden], so the editor chrome (toolbar, blank canvas) stays
+   visible behind the empty state before any note has ever been
+   created. */
+.editor[hidden] { display: none; }
 .format-bar button {
   border: none;
   background: transparent;

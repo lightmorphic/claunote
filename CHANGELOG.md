@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.8.1 — 2026-08-05
+
+- Fixed the "New note" button being unreachable on real phones. The
+  page sized itself with `100vh`, which is the *largest* possible
+  mobile viewport (it includes the strip hidden behind the browser's
+  collapsible address bar); combined with `overflow: hidden`, that
+  strip clipped off anything pinned near the bottom of the screen -
+  including the FAB - whenever the address bar was showing, which on
+  a real phone is most of the time. Now sized with `100dvh` (falling
+  back to `100vh` on older browsers), which always tracks the actual
+  visible viewport.
+- Fixed the editor chrome (toolbar, blank canvas) rendering behind the
+  "No notes yet" message before any note had ever been created. A
+  `.editor { display: flex }` rule was winning a same-specificity tie
+  against the `[hidden]` attribute, the same class of bug already
+  fixed for `.format-bar` in 1.5.x but missed on `.editor` itself.
+
 ## 1.8.0 — 2026-08-05
 
 Full pre-deployment polish pass over the whole app, verified in a real
