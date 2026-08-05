@@ -1,6 +1,6 @@
 // Notespice end-to-end Writer <-> Markdown round-trip suite.
 //
-// Runs against a REAL browser and a REAL running server — not jsdom —
+// Runs against a REAL browser and a REAL running server - not jsdom -
 // because this project's history proved that contenteditable behavior
 // can only be trusted when observed in an actual browser.
 //

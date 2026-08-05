@@ -1,4 +1,4 @@
-/* Geist, self-hosted (SIL Open Font License — see
+/* Geist, self-hosted (SIL Open Font License - see
    fonts/GEIST-LICENSE.txt). Variable weight file: one face covers
    100-900. No font CDN, no external request of any kind. Geist ships
    no italic faces; browsers synthesize the oblique for <em>. */
@@ -244,7 +244,7 @@ button {
     display: block; position: absolute; inset: 0;
     background: rgba(0, 0, 0, 0.35); z-index: 15;
   }
-  /* The single-row app bar doesn't fit on a narrow screen — wrap into
+  /* The single-row app bar doesn't fit on a narrow screen - wrap into
      two rows, with the action group on its own row above the title,
      the four groups spread edge to edge. */
   .editor-toolbar {
@@ -315,7 +315,7 @@ button {
   outline-offset: -1px;
 }
 
-/* Note list: Material drawer items — full-pill active state */
+/* Note list: Material drawer items - full-pill active state */
 #note-list {
   list-style: none;
   margin: 0;
@@ -379,7 +379,7 @@ button {
 }
 .logout-btn:hover { background: var(--hover-layer); color: var(--text); }
 
-/* Sidebar footer: name + running version, linking to the repo — so
+/* Sidebar footer: name + running version, linking to the repo - so
    which build is running is always one glance away. */
 .version-link {
   display: block;
@@ -472,8 +472,8 @@ button {
 .menu-toggle-btn:hover { background: var(--hover-layer); }
 .menu-toggle-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; }
 
-/* The brand mark lives in the app bar so it's always on screen —
-   even with the drawer collapsed — without shouting. */
+/* The brand mark lives in the app bar so it's always on screen -
+   even with the drawer collapsed - without shouting. */
 .appbar-logo {
   width: 22px;
   height: 22px;
@@ -498,8 +498,8 @@ button {
 .toolbar-right {
   display: flex;
   align-items: center;
-  /* One uniform gap between the four groups — undo/redo,
-     Writer/Markdown, save state, delete — so they read as evenly
+  /* One uniform gap between the four groups - undo/redo,
+     Writer/Markdown, save state, delete - so they read as evenly
      spaced siblings, not a cluster. */
   gap: 20px;
   margin-left: auto;
@@ -588,7 +588,7 @@ button {
   align-items: center;
   background: var(--bg);
 }
-/* Same specificity as the browser's [hidden] { display: none } — this
+/* Same specificity as the browser's [hidden] { display: none } - this
    attribute rule must exist or `display: flex` above wins the tie and
    the bar never hides in Markdown mode. */
 .format-bar[hidden] { display: none; }
@@ -662,7 +662,7 @@ button {
   word-break: break-word;
   overflow-wrap: anywhere;
   line-height: 1.8;
-  font-family: inherit; /* Geist everywhere — browsers default <pre> to monospace */
+  font-family: inherit; /* Geist everywhere - browsers default <pre> to monospace */
 }
 .wysiwyg-container pre code {
   background: none;
@@ -703,7 +703,7 @@ button {
    <br><br> blank lines inside one <p>, so the caret can land on the
    blank line exactly like in the Markdown textarea. The margin here
    only separates a text run from real blocks (headings, lists, code)
-   — never from another text paragraph. */
+   - never from another text paragraph. */
 .wysiwyg-container p { margin: 0.6em 0; white-space: pre-line; }
 .wysiwyg-container > p:first-child { margin-top: 0; }
 .wysiwyg-container ul,
@@ -751,7 +751,7 @@ button {
 
 /* Mobile compaction for the app-bar action groups. Lives at the END
    of the file on purpose: these override component rules of equal
-   specificity above, and in CSS a tie is won by source order — placed
+   specificity above, and in CSS a tie is won by source order - placed
    earlier, they'd silently lose and the delete button overflows off
    the right edge of a phone screen. */
 @media (max-width: 700px) {

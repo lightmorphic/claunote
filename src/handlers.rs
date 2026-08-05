@@ -60,7 +60,7 @@ pub async fn login(
     if state.auth.is_locked_out(&client_key) {
         return err(
             StatusCode::TOO_MANY_REQUESTS,
-            "too many failed login attempts — try again in 15 minutes",
+            "too many failed login attempts, try again in 15 minutes",
         );
     }
 
@@ -112,7 +112,7 @@ pub async fn list_notes(State(state): State<Arc<AppState>>, headers: HeaderMap) 
     }
     match state.store.list() {
         Ok(notes) => {
-            // store.list() already sorts by last-modified — that's the
+            // store.list() already sorts by last-modified - that's the
             // right fallback order, but recently *viewed* notes (which
             // may not have been edited at all) take priority over it.
             // Split into "recent, in view order" followed by
@@ -349,7 +349,7 @@ pub async fn get_file(
     // browser attaches cookies to <img src="/api/files/...">
     // requests automatically (it's a same-origin request either way),
     // attachments get the same access control as the notes themselves
-    // — nothing is reachable by a logged-out visitor just because it's
+    // - nothing is reachable by a logged-out visitor just because it's
     // an <img> tag rather than a fetch() call.
     if let Err(resp) = require_auth(&state, &headers) {
         return resp;
@@ -370,7 +370,7 @@ pub async fn get_file(
 // ---------- export / import ----------
 
 /// Days-since-epoch to (year, month, day), Howard Hinnant's
-/// `civil_from_days` algorithm — public domain, widely used (it's the
+/// `civil_from_days` algorithm - public domain, widely used (it's the
 /// same math behind libc++'s <chrono>). Pulled in as ~10 lines instead
 /// of a whole date/time dependency, since a stamped export filename is
 /// the only place this app needs a calendar date at all.
@@ -480,10 +480,10 @@ pub async fn import_notes(
     // Zip bombs: a maliciously crafted archive can be a few KB
     // compressed but decompress to gigabytes. The request body limit
     // only caps the *compressed* upload size, which does nothing
-    // against this — the cap has to be enforced on the decompressed
+    // against this - the cap has to be enforced on the decompressed
     // read itself, not trusted from the zip's own declared size
     // (which can be forged in a crafted file).
-    const MAX_ENTRY_SIZE: u64 = 20 * 1024 * 1024; // matches the single-file upload limit
+    const MAX_ENTRY_SIZE: u64 = MAX_UPLOAD_BYTES as u64; // same cap as a single-file upload
     const MAX_TOTAL_IMPORT_SIZE: u64 = 200 * 1024 * 1024; // generous for a real vault, not for an attack
     let mut total_decompressed: u64 = 0;
 

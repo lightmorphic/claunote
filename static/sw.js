@@ -1,13 +1,13 @@
 // Notespice service worker.
 //
 // Deliberately minimal, matching the rest of this app: it exists to
-// satisfy the two things a PWA actually needs a service worker for —
+// satisfy the two things a PWA actually needs a service worker for -
 // installability, and the app shell still loading if the network is
 // briefly unavailable. It does NOT cache note data. Every /api/
 // request always goes straight to the network; caching that would
 // mean occasionally showing stale notes, which is a much worse outcome
 // for a notes app than "this one request failed."
-const SHELL_CACHE = "notespice-shell-v3";
+const SHELL_CACHE = "notespice-shell-v4";
 const SHELL_FILES = [
   "/",
   "/app.js",
@@ -38,7 +38,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Never intercept API calls — always hit the network directly.
+  // Never intercept API calls - always hit the network directly.
   if (url.pathname.startsWith("/api/")) return;
 
   // Shell files: try the network first (so updates are picked up

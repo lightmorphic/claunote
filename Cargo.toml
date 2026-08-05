@@ -1,6 +1,6 @@
 [package]
 name = "notespice"
-version = "1.7.2"
+version = "1.8.0"
 edition = "2021"
 rust-version = "1.75"
 
@@ -11,12 +11,12 @@ path = "src/main.rs"
 # NOTE: these are the current, un-pinned crate versions as of writing.
 # Build this with a normal up-to-date Rust toolchain (rustup, or a
 # recent `rust:slim` Docker image) and `cargo build --release` resolves
-# everything itself — nothing here is artificially held back.
+# everything itself; nothing here is artificially held back.
 
 [dependencies]
 axum = { version = "0.7", features = ["macros", "multipart"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "signal"] }
-tower-http = { version = "0.5", features = ["fs", "trace", "limit"] }
+tower-http = { version = "0.5", features = ["fs", "trace", "limit", "set-header"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 argon2 = "0.5"

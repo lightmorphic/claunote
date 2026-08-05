@@ -4,7 +4,7 @@
 //! markdown files doesn't need a full search-engine library: a plain
 //! inverted index (word -> which notes contain it, how often) built in
 //! memory and rebuilt from the files on disk gets you full-text search
-//! in about 100 lines, with no index-corruption failure mode to debug —
+//! in about 100 lines, with no index-corruption failure mode to debug -
 //! if it's ever wrong, just restart and it rebuilds from the files,
 //! which remain the only source of truth.
 
@@ -14,8 +14,8 @@ use std::sync::RwLock;
 
 pub struct SearchIndex {
     // token -> title -> occurrence count. BTreeMap (not HashMap) for
-    // the outer index specifically so prefix search — the common case,
-    // since partial words like "fold" should match "folding" — can use
+    // the outer index specifically so prefix search - the common case,
+    // since partial words like "fold" should match "folding" - can use
     // a sorted range query instead of scanning every unique token in
     // the index on every search.
     inner: RwLock<BTreeMap<String, HashMap<String, usize>>>,
@@ -84,7 +84,7 @@ impl SearchIndex {
             // Exact token matches, plus simple prefix matches so partial
             // words ("fold" matching "folding") still surface results.
             // BTreeMap keeps tokens in sorted order, so everything
-            // starting with `token` sits in one contiguous range —
+            // starting with `token` sits in one contiguous range -
             // walk from there and stop the moment we're past it,
             // rather than checking every token in the whole index.
             for (indexed_token, postings) in index.range(token.clone()..) {
@@ -116,7 +116,7 @@ impl SearchIndex {
 }
 
 fn index_one(index: &mut BTreeMap<String, HashMap<String, usize>>, title: &str, content: &str) {
-    // Index the title's own words too, not just the content — otherwise
+    // Index the title's own words too, not just the content - otherwise
     // a note whose only distinctive word is in its title (not the body)
     // is unfindable, since the separate title-match boost below only
     // re-ranks notes that already matched via content; it was never an

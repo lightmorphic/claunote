@@ -11,8 +11,10 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use store::Store;
+use axum::http::{header, HeaderValue};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::services::ServeDir;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 pub struct AppState {
@@ -38,14 +40,14 @@ async fn main() -> anyhow::Result<()> {
     let username = env_or("NOTES_USERNAME", "admin");
     let password = std::env::var("NOTES_PASSWORD").map_err(|_| {
         anyhow::anyhow!(
-            "NOTES_PASSWORD environment variable is required — set it to a strong password"
+            "NOTES_PASSWORD environment variable is required, set it to a strong password"
         )
     })?;
     if password.len() < 8 {
         anyhow::bail!("NOTES_PASSWORD must be at least 8 characters");
     }
     // Two separate directories, on purpose: NOTES_DIR is the actual
-    // vault (notes + their files/ subfolder) — back this up, sync it,
+    // vault (notes + their files/ subfolder) - back this up, sync it,
     // whatever you like. NOTES_DATA_DIR is app-only bookkeeping
     // (currently just the recently-viewed list) that isn't a note at
     // all; losing it just resets sidebar ordering, nothing more.
@@ -58,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
     let search = SearchIndex::new();
 
     // Build the search index from whatever's already on disk. The
-    // index is purely a cache — if this app has never run before,
+    // index is purely a cache - if this app has never run before,
     // or someone dropped .md files in by hand, this is where they
     // get picked up.
     let notes = store.list()?;
@@ -82,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
 
     if !secure_cookies {
         tracing::warn!(
-            "NOTES_INSECURE_COOKIES=true — session cookies will be sent without the Secure flag. \
+            "NOTES_INSECURE_COOKIES=true, session cookies will be sent without the Secure flag. \
              Only use this for local testing over plain HTTP, never in production."
         );
     }
@@ -110,7 +112,33 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .nest("/api", api)
         .fallback_service(ServeDir::new("static").append_index_html_on_directories(true))
-        .layer(RequestBodyLimitLayer::new(25 * 1024 * 1024)) // 25MB — covers the 20MB attachment cap plus multipart overhead
+        .layer(RequestBodyLimitLayer::new(25 * 1024 * 1024)) // 25MB - covers the 20MB attachment cap plus multipart overhead
+        // Security headers set by the app itself, so every deployment
+        // gets them, proxied or not. The CSP allows exactly what the
+        // frontend actually does: own-origin scripts only (app.js has
+        // no inline scripts), inline styles (contenteditable editing
+        // needs them), and images from anywhere over https since notes
+        // can embed images by URL.
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; \
+                 img-src 'self' https: data:; object-src 'none'; base-uri 'none'; \
+                 frame-ancestors 'none'; form-action 'self'",
+            ),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::X_CONTENT_TYPE_OPTIONS,
+            HeaderValue::from_static("nosniff"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::X_FRAME_OPTIONS,
+            HeaderValue::from_static("DENY"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::REFERRER_POLICY,
+            HeaderValue::from_static("no-referrer"),
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

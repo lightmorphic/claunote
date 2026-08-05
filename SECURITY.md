@@ -1,6 +1,6 @@
 # Security Policy
 
-Notespice is a personal, single-maintainer project — not a company or a
+Notespice is a personal, single-maintainer project, not a company or a
 team with a dedicated security function. This document sets realistic
 expectations rather than promising something that isn't true.
 
@@ -8,7 +8,7 @@ expectations rather than promising something that isn't true.
 
 Only the latest release (the `latest` tag / most recent tagged commit) is
 supported. There's no long-term-support branch and no backporting of
-fixes to older versions — if a vulnerability is found, the fix lands in
+fixes to older versions: if a vulnerability is found, the fix lands in
 the next build, and you're expected to update to it.
 
 ## Reporting a vulnerability
@@ -27,7 +27,7 @@ is ready.
 
 If you'd rather not use GitHub for this, opening a regular issue that
 says only "I have a security issue to report, please contact me" (with
-no details) is a reasonable fallback — it flags the need without
+no details) is a reasonable fallback. It flags the need without
 disclosing anything publicly.
 
 ## What to expect
@@ -35,25 +35,25 @@ disclosing anything publicly.
 This is maintained in whatever time is available outside other
 commitments, not on an SLA. Best-effort, not guaranteed:
 - Acknowledgement of a report: aim for a few days
-- A fix or mitigation: depends entirely on severity and complexity —
-  could be same-day for something simple and serious, could be longer
+- A fix or mitigation: depends entirely on severity and complexity.
+  Could be same-day for something simple and serious, could be longer
   for something subtle
 
 ## Scope
 
 This policy covers the Notespice application code itself (this
-repository) — the Rust backend, the frontend, the Dockerfile, and the CI
+repository): the Rust backend, the frontend, the Dockerfile, and the CI
 workflow. It does not cover:
 - Vulnerabilities in dependencies themselves (report those upstream, to
   the dependency's own maintainers or via [RustSec](https://rustsec.org/))
 - Your own deployment environment (reverse proxy config, TLS setup,
-  network exposure, host OS) — those are outside this project's control
+  network exposure, host OS); those are outside this project's control
 
 ## What's already in place
 
 For context on the existing security posture (so a report can focus on
 what's actually new), see the **Security notes** section in
-[README.md](./README.md) — briefly: Argon2id password hashing,
+[README.md](./README.md). Briefly: Argon2id password hashing,
 server-side session tokens, per-IP login rate limiting, allow-list
 filename sanitization against path traversal, a non-root container user,
 OS packages patched at every build plus a weekly scheduled rebuild, and

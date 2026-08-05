@@ -2,7 +2,7 @@
 //!
 //! There is no database. Every note is a single `.md` file in the data
 //! directory, and the *filename* (without extension) is the note's title.
-//! That's the whole storage model — you can `ls` the data directory, open
+//! That's the whole storage model - you can `ls` the data directory, open
 //! a note in any text editor, `rsync` it, back it up with plain files, and
 //! nothing about the app owns your data in a way you can't get to.
 
@@ -28,7 +28,7 @@ pub struct Note {
 ///
 /// This is the single most security-relevant function in the app: every
 /// title the client sends passes through here before it ever touches the
-/// filesystem. We use an allow-list, not a deny-list — anything that
+/// filesystem. We use an allow-list, not a deny-list - anything that
 /// isn't explicitly permitted is stripped, so there's no `../`, no null
 /// bytes, no NTFS/reserved-name tricks to worry about.
 /// Same allow-list approach as `sanitize_title`, but for attachment
@@ -76,7 +76,7 @@ pub fn sanitize_filename(name: &str) -> Result<String> {
     // fixed point: sanitize_filename(sanitize_filename(x)) always
     // equals sanitize_filename(x). An earlier version trimmed these
     // separately, which meant re-sanitizing an already-clean name could
-    // still shave characters off it — exactly the kind of drift that
+    // still shave characters off it - exactly the kind of drift that
     // must never happen between the name we write to disk and the name
     // we report back to the client.
     let cleaned = collapsed
@@ -126,10 +126,10 @@ pub struct Store {
 }
 
 impl Store {
-    /// `root` holds notes (.md) and their `files/` subfolder — the
+    /// `root` holds notes (.md) and their `files/` subfolder - the
     /// actual vault, meant to be backed up. `app_data_root` holds only
     /// app-internal state that isn't a note (currently just
-    /// `.recent.json`, the recently-viewed list) — separate on
+    /// `.recent.json`, the recently-viewed list) - separate on
     /// purpose, so it can live on different storage than the notes
     /// themselves without either directory containing a mix of "your
     /// data" and "the app's own bookkeeping".
@@ -138,7 +138,7 @@ impl Store {
             .with_context(|| format!("creating notes directory at {}", root.display()))?;
         // Attachments (images, PDFs, anything else dropped into a note)
         // live in a "files" subfolder of the same notes directory, so
-        // the whole notes vault — text and attachments together — is
+        // the whole notes vault - text and attachments together - is
         // still just one bind-mounted volume in docker-compose.
         let files_root = root.join("files");
         std::fs::create_dir_all(&files_root)
@@ -214,13 +214,13 @@ impl Store {
     }
 
     /// Like `read`, but for internal callers that already have an
-    /// *exact* title straight from `list()` — used by export, which
+    /// *exact* title straight from `list()` - used by export, which
     /// otherwise re-sanitizes an already-real filename and can look
     /// for the wrong path. `list()` reports whatever filenames
     /// genuinely exist (including files placed on disk outside the
     /// app, which the app deliberately supports), so titles from it
     /// may contain characters the sanitizer would normally strip from
-    /// untrusted input — re-running them through the sanitizer here
+    /// untrusted input - re-running them through the sanitizer here
     /// would silently look for a different file than the one that
     /// exists. Still confined to `root` by construction, since the
     /// title came from enumerating that same directory.
@@ -299,11 +299,11 @@ impl Store {
 
     // ---------- recently-viewed tracking ----------
     //
-    // Separate from "last modified" — opening a note you don't edit
+    // Separate from "last modified" - opening a note you don't edit
     // should still bring it to the top of the list. Kept as a small
     // capped JSON file rather than a database; it's app state, not a
     // note, so it lives in its own directory entirely (app_data_root,
-    // distinct from the notes vault) and is fine to lose or reset —
+    // distinct from the notes vault) and is fine to lose or reset -
     // worst case, the sidebar order rebuilds itself as you keep
     // opening notes.
 
@@ -339,7 +339,7 @@ impl Store {
     }
 
     /// The recently-viewed titles, most-recent-first. Titles for notes
-    /// that no longer exist are left for the caller to filter out —
+    /// that no longer exist are left for the caller to filter out -
     /// this just reports what's on file.
     pub fn recent_titles(&self) -> Vec<String> {
         self.load_recent()
@@ -349,7 +349,7 @@ impl Store {
 
     /// Resolves an *already-sanitized* filename to a path inside the
     /// files directory, verifying it didn't somehow escape. Callers
-    /// must run untrusted input through `sanitize_filename` first —
+    /// must run untrusted input through `sanitize_filename` first -
     /// this does not re-sanitize, because doing so on an
     /// already-cleaned name previously caused the on-disk filename to
     /// drift from the name reported back to the client (sanitization
@@ -406,7 +406,7 @@ impl Store {
     }
 
     /// Imports a note under a filesystem-safe name derived from the
-    /// given title, appending "(1)", "(2)", etc. on collision — an
+    /// given title, appending "(1)", "(2)", etc. on collision - an
     /// import never silently overwrites an existing note. Returns the
     /// title it was actually saved under.
     pub fn import_note(&self, title: &str, content: &str) -> Result<String> {

@@ -19,7 +19,7 @@ WORKDIR /app
 
 # Links the GHCR package to the repository automatically.
 LABEL org.opencontainers.image.source="https://github.com/FOSSCharlie/notespice"
-LABEL org.opencontainers.image.description="Notespice — self-hosted, database-less markdown notes"
+LABEL org.opencontainers.image.description="Notespice - self-hosted, database-less markdown notes"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Patch OS packages at build time rather than trusting whatever was
@@ -47,7 +47,7 @@ EXPOSE 8080
 VOLUME ["/notes", "/data"]
 
 # Hits the static index page rather than an /api/ route, since that's
-# served with no auth check either way — a plain 200 here just confirms
+# served with no auth check either way - a plain 200 here just confirms
 # the server is up and accepting connections, nothing more.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f "http://localhost:${NOTES_PORT}/" || exit 1

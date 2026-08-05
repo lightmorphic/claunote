@@ -1,6 +1,6 @@
 //! Authentication.
 //!
-//! Single user, by design — this is a personal notes app, not a
+//! Single user, by design - this is a personal notes app, not a
 //! multi-tenant product. Security still matters just as much for a
 //! single-user app (arguably more, since there's no admin watching for
 //! abuse), so:
@@ -11,7 +11,7 @@
 //! - Sessions are opaque random tokens, held server-side in memory and
 //!   handed to the browser as an HttpOnly, Secure, SameSite=Strict
 //!   cookie. The cookie value itself carries no information an attacker
-//!   could use even if intercepted in a way that skipped TLS — it's just
+//!   could use even if intercepted in a way that skipped TLS - it's just
 //!   a lookup key, not a signed blob of claims.
 //! - Login attempts are rate-limited per source IP to blunt brute force.
 

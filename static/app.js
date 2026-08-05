@@ -12,13 +12,14 @@ let currentTitle = null;      // title of the note currently open, or null
 let originalTitle = null;     // title as last saved, to detect renames
 let mode = "wysiwyg";         // "wysiwyg" | "raw"
 let saveTimer = null;
+let savePending = false;
 let allNotes = [];            // last full note list, for restoring after a cleared search
 
 const el = (id) => document.getElementById(id);
 
 // Without this, browsers are inconsistent about what Enter produces
 // in a contenteditable (Chrome defaults to <div>, and the exact
-// nesting can vary by cursor position) — forcing a real <p> per Enter
+// nesting can vary by cursor position) - forcing a real <p> per Enter
 // keeps the DOM shape predictable and matching what htmlToMd expects.
 document.execCommand("defaultParagraphSeparator", false, "p");
 // Force semantic tags (<b>, <i>) from formatting commands, never
@@ -98,6 +99,7 @@ el("login-form").addEventListener("submit", async (e) => {
 });
 
 el("logout-btn").addEventListener("click", async () => {
+  await flushPendingSave();
   await fetch("/api/logout", { method: "POST" });
   currentTitle = null;
   showLogin();
@@ -160,7 +162,7 @@ el("pin-btn").addEventListener("click", () => {
   if (sidebarPinned) setSidebarOpen(true);
 });
 // Clicking anywhere in the right-hand pane (not just typing) also
-// gets the sidebar out of the way — unless pinned, in which case it
+// gets the sidebar out of the way - unless pinned, in which case it
 // stays open regardless.
 document.querySelector(".editor-pane").addEventListener("click", () => {
   if (!sidebarPinned) setSidebarOpen(false);
@@ -246,8 +248,8 @@ el("search-box").addEventListener("keydown", (e) => {
 });
 
 // Only excluding the search box itself meant "/" was stolen from every
-// other typing surface too — a note title, the Writer editor, the raw
-// Markdown textarea — so a URL like "https://example.com" typed into a
+// other typing surface too - a note title, the Writer editor, the raw
+// Markdown textarea - so a URL like "https://example.com" typed into a
 // note yanked focus to search mid-keystroke and dropped the slash.
 // Skip the shortcut whenever focus is already on anything you can type
 // into, not just the search box specifically.
@@ -264,7 +266,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ---------- markdown <-> HTML conversion ----------
-// Notespice's own converter — no external editor library, no CDN
+// Notespice's own converter - no external editor library, no CDN
 // dependency. Supports the full GFM feature set this app's toolbar
 // exposes: headings 1-6, bold/italic/strikethrough/inline code, all
 // three list types with nesting, blockquotes, fenced code blocks,
@@ -274,10 +276,10 @@ function escapeHtml(s) {
 }
 
 // Only allow schemes that can't execute code when clicked/loaded:
-// http(s), mailto, and schemeless (relative paths, #anchors — covers
+// http(s), mailto, and schemeless (relative paths, #anchors - covers
 // our own /api/files/... upload URLs). Anything else (javascript:,
 // vbscript:, data:, etc.) is neutralized to "#" rather than inserted
-// as-is — a note containing `[x](javascript:...)`, typed directly or
+// as-is - a note containing `[x](javascript:...)`, typed directly or
 // imported from a file, would otherwise execute arbitrary script in
 // the logged-in session when clicked.
 function sanitizeUrl(url) {
@@ -320,7 +322,7 @@ function inlineNodeToMd(node) {
       // A single <br> is a hard line break, and GFM's syntax for that
       // is two trailing spaces before the newline. Serializing it as a
       // bare "\n" (a soft break) silently downgraded any imported
-      // note's real hard breaks on resave — a bare newline is exactly
+      // note's real hard breaks on resave - a bare newline is exactly
       // what a soft break (a literal \n in paragraph text) already
       // round-trips as, so the two DOM forms need two distinct
       // serializations to both survive. Visually identical either way,
@@ -337,7 +339,7 @@ function inlineNodeToMd(node) {
     if (tag === "input" && child.type === "checkbox") { i++; continue; }
     const inner = inlineNodeToMd(child);
     // An inline formatting element whose content is only whitespace,
-    // breaks, or zero-width-space fillers must not emit its markers —
+    // breaks, or zero-width-space fillers must not emit its markers -
     // a <b> holding nothing but a stray <br> would otherwise become
     // "**\n**", visible junk asterisks after the next reparse.
     const innerVisible = inner.replace(/\s/g, "").replace(/\u200B/g, "") !== "";
@@ -384,7 +386,7 @@ const HEADING_PATTERNS = [
 ];
 
 // Used to know when to stop consuming lines into the current
-// paragraph — a paragraph continues across lines until a blank line
+// paragraph - a paragraph continues across lines until a blank line
 // *or* a line that starts a different kind of block.
 function isBlockStart(line) {
   if (/^```/.test(line)) return true;
@@ -527,8 +529,8 @@ function mdToHtmlInner(md) {
     if (raw.trim() === "") { closeAllLists(); i++; continue; }
 
     closeAllLists();
-    // Consume an entire run of plain text — INCLUDING the blank lines
-    // between its paragraphs — into a single <p>, encoding every kind
+    // Consume an entire run of plain text - INCLUDING the blank lines
+    // between its paragraphs - into a single <p>, encoding every kind
     // of break as something the caret can actually land on:
     //   soft break            -> a literal "\n"  (one line down)
     //   hard break ("  "/"\") -> <br>            (one line down)
@@ -564,7 +566,7 @@ function mdToHtmlInner(md) {
       }
       if (paraHtml !== "") paraHtml += sep === null ? "\n" : sep;
       // A region can legitimately begin with pending breaks (a note
-      // whose text starts with a literal <br> line) — keep them.
+      // whose text starts with a literal <br> line) - keep them.
       else if (sep && sep.indexOf("<br>") === 0) paraHtml += sep;
       const hardBreak = /(  +|\\)$/.test(line);
       paraHtml += inlineMdToHtml(line.replace(/(  +|\\)$/, ""));
@@ -605,7 +607,7 @@ function serializeList(listEl, depth) {
   let n = 1;
   // Walk direct children in document order rather than querying only
   // <li>s: browsers' native indent (execCommand) nests a <ul> directly
-  // inside a <ul> with no wrapping <li> — technically invalid HTML,
+  // inside a <ul> with no wrapping <li> - technically invalid HTML,
   // but real. Querying ":scope > li" alone made such a list serialize
   // to an empty string: the entire list silently vanished on save.
   Array.from(listEl.children).forEach((child) => {
@@ -645,7 +647,7 @@ function htmlToMd(container) {
   };
   container.childNodes.forEach((node) => {
     if (node.nodeType === 3) {
-      // Bare text node at the top level — a user typing straight into
+      // Bare text node at the top level - a user typing straight into
       // the editor div produces exactly this. Gather into an implicit
       // paragraph rather than silently dropping it.
       looseBuffer.appendChild(node.cloneNode(true));
@@ -664,7 +666,7 @@ function htmlToMd(container) {
     if (/^h[1-6]$/.test(tag)) out.push("#".repeat(+tag[1]) + " " + oneLine(inlineOnly(node)));
     // inlineOnly, not textContent: textContent strips every inline
     // element, so bold/italic/code inside a quote was destroyed on
-    // save — "> **a** b" became "> a b" permanently.
+    // save - "> **a** b" became "> a b" permanently.
     else if (tag === "blockquote") out.push("> " + oneLine(inlineOnly(node)));
     else if (tag === "div" && node.classList.contains("md-alert")) {
       const type = Array.from(node.classList).find((c) => c.indexOf("md-alert-") === 0).replace("md-alert-", "").toUpperCase();
@@ -716,7 +718,7 @@ function htmlToMd(container) {
       out.push(tlines.join("\n"));
     } else if (tag === "p" || tag === "div") {
       if (node.querySelector("p, div, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre, table, hr")) {
-        // Unexpected nested block content mixed with loose text —
+        // Unexpected nested block content mixed with loose text -
         // walk this node's own children directly so any loose text
         // sitting alongside a nested block isn't silently dropped
         // (recursing wholesale would skip it, since htmlToMd only
@@ -745,7 +747,7 @@ function htmlToMd(container) {
         if (parts.length) out.push(parts.join("\n\n"));
       } else {
         // Preserve leading <br>s in a paragraph as explicit <br>
-        // lines — otherwise inlineOnly's leading-whitespace strip
+        // lines - otherwise inlineOnly's leading-whitespace strip
         // erases them. Without this, the 3+ consecutive Enter
         // pattern ("a\n\n<br>\nb") loses its extra <br> line when
         // switching modes back and forth: mdToHtml turns it into
@@ -788,7 +790,10 @@ el("new-note-btn").addEventListener("click", async () => {
       body: JSON.stringify({ title, content: "" }),
     });
     await loadNotes();
-    await openNote(title);
+    // loadNotes auto-opens the newest note when nothing was open, so
+    // only open explicitly when that didn't already happen - opening
+    // twice costs two extra requests and races a fast title edit.
+    if (currentTitle !== title) await openNote(title);
     if (isNarrow()) setSidebarOpen(false);
     el("title-input").focus();
     el("title-input").select();
@@ -798,6 +803,7 @@ el("new-note-btn").addEventListener("click", async () => {
 });
 
 async function openNote(title) {
+  await flushPendingSave();
   const note = await apiJson(`/notes/${encodeURIComponent(title)}`);
   currentTitle = note.title;
   originalTitle = note.title;
@@ -808,14 +814,14 @@ async function openNote(title) {
   el("title-input").value = note.title;
   el("raw-textarea").value = note.content;
   el("wysiwyg-editor").innerHTML = mdToHtml(note.content);
-  // The indicator always shows a state — a freshly opened note is by
+  // The indicator always shows a state - a freshly opened note is by
   // definition saved, so say so rather than sitting blank until the
   // first edit.
   el("save-indicator").textContent = "saved";
   resetDeleteButton();
 
   // Opening a note just moved it to the front of the server's
-  // recently-viewed order — re-fetch so the sidebar reflects that
+  // recently-viewed order - re-fetch so the sidebar reflects that
   // immediately, rather than re-rendering the array from before this
   // note was opened (which is why the list previously looked like it
   // wasn't actually tracking what was last viewed).
@@ -854,7 +860,7 @@ function nextFootnoteNumber() {
 
 // Wraps the current selection in `tagName`. If nothing is selected,
 // inserts an empty element (a zero-width space, invisible) with the
-// cursor placed inside it, so typing continues in that format —
+// cursor placed inside it, so typing continues in that format -
 // rather than inserting visible placeholder text the person then has
 // to notice, select, and delete. Verified structurally with jsdom
 // (both the collapsed- and selected-text paths) before shipping.
@@ -916,7 +922,7 @@ function onEditingInput() {
 el("raw-textarea").addEventListener("input", onEditingInput);
 el("title-input").addEventListener("input", onEditingInput);
 el("wysiwyg-editor").addEventListener("input", onEditingInput);
-// Enter and Shift+Enter both just insert a line break — never a
+// Enter and Shift+Enter both just insert a line break - never a
 // native paragraph split. What that break *means* in the saved
 // markdown depends on how many land in a row (handled by
 // inlineNodeToMd's run-length logic): one is a soft break, two is a
@@ -929,7 +935,7 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
 
     // Inside a list item, the custom <br> insertion below is exactly
     // wrong: it puts a line break *inside* the current item, so
-    // pressing Enter could never create a second bullet — and the
+    // pressing Enter could never create a second bullet - and the
     // "item<br>next" DOM it left behind serialized to markdown that
     // drifted on every mode switch. The browser's native Enter in an
     // <li> does the two things people actually expect: split into a
@@ -950,7 +956,7 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
       if (inLi) return; // native list behavior
       if (inPre) {
         // Inside a code block, a line break is a literal newline
-        // character, not a <br> — the serializer reads the block's
+        // character, not a <br> - the serializer reads the block's
         // text, and white-space: pre-wrap renders the \n directly.
         e.preventDefault();
         const r = sel.getRangeAt(0);
@@ -975,7 +981,7 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
 
     e.preventDefault();
     // Manual Range-based insertion, not execCommand("insertLineBreak")
-    // — execCommand's exact DOM behavior varies by browser in ways
+    // - execCommand's exact DOM behavior varies by browser in ways
     // this environment has no way to verify (no real browser, and
     // jsdom doesn't implement execCommand at all), and it's the most
     // likely cause of a real data-loss bug: an unpredictable resulting
@@ -990,7 +996,7 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
       // (<strong>, <em>, <code>, etc.) and sits at the very end (or
       // start) of it, insert the <br> outside that element rather
       // than inside it. Inserting inside produces broken markdown
-      // like `**a\n**\nb` — the closing marker gets orphaned onto
+      // like `**a\n**\nb` - the closing marker gets orphaned onto
       // its own line, which no renderer treats as valid emphasis.
       const inlineTags = new Set(["strong", "b", "em", "i", "del", "s", "strike", "code", "a", "sup", "span"]);
       const editor = el("wysiwyg-editor");
@@ -1033,24 +1039,24 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
       // start of an existing text node (e.g. right after a previous
       // Enter's zero-width-space filler, with the cursor sitting at its
       // start) splits that node in two, leaving an empty text node
-      // *before* the <br>. It's invisible, but it's a real sibling —
+      // *before* the <br>. It's invisible, but it's a real sibling -
       // and it breaks the run-length count of consecutive <br>s just
       // below, used to tell a soft break from a paragraph break from an
       // explicit <br> line. Without this, three Enters in a row can
       // leave one dangling behind the first <br>, splitting what should
-      // be a single run of 3 into a run of 1 and a run of 2 — so the
+      // be a single run of 3 into a run of 1 and a run of 2 - so the
       // third Enter silently does nothing instead of adding the extra
       // line, since GFM collapses runs of 2 and "1 then 2" identically.
       if (br.previousSibling && br.previousSibling.nodeType === 3 && br.previousSibling.textContent === "") {
         br.previousSibling.remove();
       }
 
-      // A <br> with nothing after it (the common case — pressing
+      // A <br> with nothing after it (the common case - pressing
       // Enter at the end of what you're typing) doesn't render a new
       // visible line by itself in most browsers; nothing appears to
       // happen until something follows it. Without this, the natural
       // reaction is to press Enter again, which inserts a *second*
-      // real <br> — turning what should be one simple line break into
+      // real <br> - turning what should be one simple line break into
       // a paragraph break by the run-length logic below. A zero-width
       // space is a real character, not a <br>, so it gives the
       // browser something to render a line for without being counted
@@ -1074,7 +1080,7 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
     }
   }
   // Browsers auto-wire Ctrl+U to underline for any contenteditable,
-  // with no code of ours calling for it — underline has no GFM
+  // with no code of ours calling for it - underline has no GFM
   // representation, so block it explicitly rather than relying only
   // on the serializer's fallback to silently drop it on save.
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") {
@@ -1083,7 +1089,7 @@ el("wysiwyg-editor").addEventListener("keydown", (e) => {
 });
 // Force paste to plain text only. Rich HTML from Word/Google Docs/a
 // webpage can carry formatting with zero GFM representation (colors,
-// underline, fonts, justified/centered text), and — more importantly —
+// underline, fonts, justified/centered text), and - more importantly -
 // can carry arbitrary markup that bypasses the markdown converter's
 // own URL sanitization entirely, unlike anything typed or imported
 // through this app's own paths.
@@ -1115,7 +1121,7 @@ el("wysiwyg-editor").addEventListener("paste", (e) => {
   sel.addRange(range);
   onEditingInput();
 });
-// Native drag-and-drop has the same problem — dropped content can
+// Native drag-and-drop has the same problem - dropped content can
 // carry a browser's own rich HTML/URLs straight into the DOM. Direct
 // users to the Upload/Attach toolbar buttons instead, which go
 // through this app's own upload endpoint.
@@ -1337,7 +1343,7 @@ el("attach-file-input").addEventListener("change", async (e) => {
 });
 
 // ---------- undo / redo ----------
-// A plain contenteditable's undo stack is native, browser-managed —
+// A plain contenteditable's undo stack is native, browser-managed -
 // no synthetic keyboard events or workarounds needed, unlike the
 // ProseMirror-based editor this app used previously.
 el("undo-btn").addEventListener("click", () => {
@@ -1353,11 +1359,24 @@ el("redo-btn").addEventListener("click", () => {
 
 function scheduleSave() {
   el("save-indicator").textContent = "saving…";
+  savePending = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNote, 500);
 }
 
+// Runs a pending debounced save NOW instead of in up-to-500ms. Must be
+// awaited before anything that repoints the editor at a different note
+// (opening another note, logging out) - otherwise the timer fires after
+// the switch, reads the new note's state, and the old note's last edits
+// are silently dropped.
+async function flushPendingSave() {
+  if (!savePending) return;
+  await saveNote();
+}
+
 async function saveNote() {
+  clearTimeout(saveTimer);
+  savePending = false;
   if (!originalTitle) return;
   const newTitle = el("title-input").value.trim() || originalTitle;
   const content = currentMarkdown();
@@ -1377,6 +1396,25 @@ async function saveNote() {
     el("save-indicator").textContent = "error: " + e.message;
   }
 }
+
+// Last-resort flush when the tab is closed or backgrounded with a save
+// still pending. An awaited fetch can't complete during unload, so this
+// sends the PUT with keepalive, which the browser finishes after the
+// page is gone. pagehide also fires when a mobile browser backgrounds
+// the PWA, which is exactly when an unflushed edit would otherwise sit
+// unsaved indefinitely.
+window.addEventListener("pagehide", () => {
+  if (!savePending || !originalTitle) return;
+  const newTitle = el("title-input").value.trim() || originalTitle;
+  const body = { content: currentMarkdown() };
+  if (newTitle !== originalTitle) body.new_title = newTitle;
+  fetch(`/api/notes/${encodeURIComponent(originalTitle)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    keepalive: true,
+  });
+});
 
 const DELETE_ICON = el("delete-btn").innerHTML;
 let deleteConfirming = false;

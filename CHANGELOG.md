@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.8.0 — 2026-08-05
+
+Full pre-deployment polish pass over the whole app, verified in a real
+browser at every step (16-step click-through, 58-scenario converter
+suite, and targeted reproductions).
+
+- Fixed a data-loss bug: switching notes or logging out while an
+  autosave was still pending (the editor debounces saves until 500ms
+  after the last keystroke) silently dropped everything typed since
+  the last completed save. Pending saves are now flushed before the
+  editor switches away, and closing or backgrounding the tab sends the
+  save with `keepalive` so it completes even after the page is gone.
+- Security headers on every response, set by the app itself so every
+  deployment gets them with or without a reverse proxy:
+  `Content-Security-Policy` (own-origin scripts and styles only;
+  notes can still embed images by https URL), `X-Content-Type-Options:
+  nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy:
+  no-referrer`.
+- PWA manifest colors caught up with the redesign: theme color is now
+  the app's yellow (#FFC107) and the splash background the dark navy
+  (#10141C). Installed-app splash screens previously still showed the
+  pre-redesign orange and graphite.
+- Accessibility: the search box, note title, Writer surface, and
+  Markdown textarea now expose proper labels and roles to screen
+  readers. All color pairs measured at AA contrast or better (weakest
+  6.1:1).
+- "New note" no longer opens the freshly created note twice (two
+  redundant requests when no note was open).
+- The zip-import per-entry cap now derives from the single-file
+  upload cap instead of restating the same number.
+- Removed the unused `favicon.png` (nothing referenced it), the
+  finished one-time backfill-releases workflow, and a stale
+  `.gitignore` entry.
+- README corrected: the Docker publish workflow authenticates with
+  the `GHCR_PAT` repository secret, not the default `GITHUB_TOKEN`.
+- Writing sweep across the README, SECURITY.md, UI copy, and code
+  comments per the house style rules; wording only, no functional
+  changes.
+- `cargo audit`: clean, 0 advisories across all 120 dependencies.
+  Service worker cache bumped to v4 so updated files are picked up.
+
 ## 1.7.2 — 2026-07-29
 
 - Reverted 1.7.1: the login screen logo is back to its previous

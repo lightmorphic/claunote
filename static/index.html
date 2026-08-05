@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Notespice" />
   <link rel="stylesheet" href="/style.css" />
-  <!-- Geist is self-hosted under /fonts (see style.css @font-face) —
+  <!-- Geist is self-hosted under /fonts (see style.css @font-face) -
        no Google Fonts CDN, no request to Google at all. -->
 </head>
 <body>
@@ -48,6 +48,7 @@
       </div>
       <div class="sidebar-header">
         <input type="search" id="search-box" placeholder="Search notes…"
+               aria-label="Search notes"
                title="Type to filter by name; press Enter to search all note content" />
       </div>
       <ul id="note-list"></ul>
@@ -65,7 +66,7 @@
 
     <main class="editor-pane">
       <div id="empty-state" class="empty-state" hidden>
-        <p style="margin:0;">No notes yet — create one to get started.</p>
+        <p style="margin:0;">No notes yet. Create one to get started.</p>
       </div>
       <div id="search-results" hidden></div>
 
@@ -75,7 +76,7 @@
             <svg viewBox="0 0 20 20" stroke-width="1.7" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
           </button>
           <img class="appbar-logo" src="/icons/icon-192.png" alt="" width="22" height="22" />
-          <input type="text" id="title-input" placeholder="Untitled note" />
+          <input type="text" id="title-input" placeholder="Untitled note" aria-label="Note title" />
           <div class="toolbar-right">
             <div class="undo-redo-group">
               <button id="undo-btn" class="icon-btn" title="Undo" aria-label="Undo">
@@ -97,12 +98,13 @@
           </div>
         </div>
         <div id="format-bar" class="format-bar"></div>
-        <div id="wysiwyg-editor" class="wysiwyg-container" contenteditable="true"></div>
-        <textarea id="raw-textarea" class="raw-textarea" hidden></textarea>
+        <div id="wysiwyg-editor" class="wysiwyg-container" contenteditable="true"
+             role="textbox" aria-multiline="true" aria-label="Note content"></div>
+        <textarea id="raw-textarea" class="raw-textarea" aria-label="Markdown source" hidden></textarea>
       </div>
     </main>
 
-    <!-- Extended FAB: the primary action, reachable from anywhere —
+    <!-- Extended FAB: the primary action, reachable from anywhere -
          including on mobile without opening the drawer first. -->
     <button id="new-note-btn" class="fab" title="New note">
       <svg viewBox="0 0 20 20" stroke-width="2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>
