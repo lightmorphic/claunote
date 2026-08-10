@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.4 — 2026-08-10
+
+- Switched the notespice.org site's typeface from an embedded-base64
+  Geist to self-hosted Manrope (`site/fonts/manrope.woff2`), matching
+  Lightmorphic's own house font. Dropped the base64-embedded font data
+  from `site/index.html` in favor of a real local file, cutting the
+  page from 173KB to 92KB.
+
 ## 1.8.3 — 2026-08-10
 
 - Added the notespice.org marketing site under `site/`, folded into
