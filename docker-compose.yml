@@ -1,6 +1,6 @@
 services:
   notespice:
-    image: ghcr.io/fosscharlie/notespice:latest
+    image: ghcr.io/lightmorphic/notespice:latest
     container_name: notespice
     restart: unless-stopped
     environment:

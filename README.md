@@ -58,7 +58,7 @@ Requires a reasonably current stable Rust toolchain. Install via
 [rustup](https://rustup.rs) if your OS package manager's version is old.
 
 ```bash
-git clone https://github.com/FOSSCharlie/notespice.git
+git clone https://github.com/lightmorphic/notespice.git
 cd notespice
 cargo build --release
 NOTES_PASSWORD=changeMe123 NOTES_DIR=./notes NOTES_DATA_DIR=./appdata ./target/release/notespice
@@ -79,14 +79,14 @@ recently-viewed list) lives separately under `./appdata`.
    [Automatic image publishing](#automatic-image-publishing))
 
    ```bash
-   docker pull ghcr.io/fosscharlie/notespice:latest
+   docker pull ghcr.io/lightmorphic/notespice:latest
    sudo mkdir -p /opt/media/notes /opt/notespice
    sudo chown -R 1000:1000 /opt/media/notes /opt/notespice
    docker run -p 8080:8080 \
      -e NOTES_PASSWORD=changeMe123 \
      -v /opt/media/notes:/notes \
      -v /opt/notespice:/data \
-     ghcr.io/fosscharlie/notespice:latest
+     ghcr.io/lightmorphic/notespice:latest
    ```
 
 2. Or build locally
@@ -107,7 +107,7 @@ recently-viewed list) lives separately under `./appdata`.
    ```yaml
    services:
      notespice:
-       image: ghcr.io/fosscharlie/notespice:latest
+       image: ghcr.io/lightmorphic/notespice:latest
        container_name: notespice
        restart: unless-stopped
        environment:
@@ -159,7 +159,7 @@ docker compose up -d
 ## Automatic image publishing
 
 `.github/workflows/docker-publish.yml` builds and pushes the image to
-`ghcr.io/fosscharlie/notespice` on every push to `main`, plus a weekly
+`ghcr.io/lightmorphic/notespice` on every push to `main`, plus a weekly
 scheduled rebuild so OS-level security patches keep landing even
 without a code change. It authenticates with a repository secret named
 `GHCR_PAT` (a personal access token with the `write:packages` scope).
@@ -316,7 +316,8 @@ notespice/
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # service worker (app shell only, no note data)
 │   ├── icons/
-│   └── fonts/                # self-hosted Geist (variable weight)
+│   ├── fonts/                # self-hosted Geist (variable weight)
+│   └── images/                # Lightmorphic badge logos
 ├── tests/
 │   └── e2e-roundtrip.js      # 58-scenario Writer<->Markdown suite (real browser)
 ├── docs/

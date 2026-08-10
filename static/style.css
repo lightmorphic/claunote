@@ -406,6 +406,35 @@ button {
   opacity: 1;
 }
 
+.lightmorphic-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 0 auto 14px;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 11px 5px 8px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.lightmorphic-badge:hover { background: var(--hover-layer); border-color: var(--text-muted); }
+.lightmorphic-badge img { display: block; height: 16px; width: auto; }
+.lightmorphic-badge .external-link-icon { display: block; width: 10px; height: 10px; opacity: 0.6; }
+.lightmorphic-badge .external-link-icon svg { width: 100%; height: 100%; }
+
+.lightmorphic-badge img.lightmorphic-badge-logo-dark { display: none; }
+.lightmorphic-badge img.lightmorphic-badge-logo-light { display: block; }
+@media (prefers-color-scheme: dark) {
+  .lightmorphic-badge img.lightmorphic-badge-logo-dark { display: block; }
+  .lightmorphic-badge img.lightmorphic-badge-logo-light { display: none; }
+}
+
 /* ---- Extended FAB: the primary action, always in reach ---- */
 .fab {
   position: absolute;

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.8.3 — 2026-08-10
+
+- Added the notespice.org marketing site under `site/`, folded into
+  this repo instead of living as a separate one (its old standalone
+  repo no longer exists under the new GitHub org). Deployment is
+  handled separately via GitHub Actions/Pages.
+- Fixed leftover `FOSSCharlie`/`fosscharlie` GitHub and GHCR
+  references (the app's UI, README, and docker-compose.yml, plus the
+  new site) left over from the repo's move to the `lightmorphic` org.
+
+## 1.8.2 — 2026-08-10
+
+- Added a small "Created by Lightmorphic" badge to the sidebar footer,
+  linking to lightmorphic.co.uk. Uses the Lightmorphic horizontal
+  logo lockup, swapping between a light-background and dark-background
+  variant to match the app's own light/dark theme.
+
 ## 1.8.1 — 2026-08-05
 
 - Fixed the "New note" button being unreachable on real phones. The
