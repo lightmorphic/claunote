@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.9 — 2026-08-10
+
+- Centered the login screen's logo and "Notespice" heading; it was
+  left-aligned inside the card before.
+
 ## 1.8.8 — 2026-08-10
 
 - Centered the Why-section Lightmorphic badge instead of left-aligning
