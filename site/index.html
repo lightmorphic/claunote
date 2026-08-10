@@ -264,29 +264,16 @@ footer nav a { color: var(--text-muted); margin: 0 10px; font-size: 13px; }
 footer nav a:hover { color: var(--text); }
 footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
 
-/* Sponsor mark, inline in the footer credit line, replacing where
-   "powered by" used to sit. The logo swaps for theme since the
-   light-mode file's wordmark is dark text that would disappear on
-   the dark canvas. */
-.sponsor-mark { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; margin-left: 4px; }
-.sponsor-logo { height: 25px; width: auto; display: block; }
-.sponsor-logo-dark { display: none; }
-@media (prefers-color-scheme: dark) {
-  .sponsor-logo-light { display: none; }
-  .sponsor-logo-dark { display: block; }
-}
-.sponsor-external-icon { width: 12px; height: 12px; flex-shrink: 0; }
-
-/* Standalone "Created by Lightmorphic" pill, same shape as the one in
-   the app itself. The logo file swaps for theme, same reasoning as
-   .sponsor-mark above. */
+/* "Created by Lightmorphic" pill, same shape as the one in the app
+   itself. The logo file swaps for theme since the light-mode file's
+   wordmark is dark text that would disappear on the dark canvas. */
 .lightmorphic-badge {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   width: fit-content;
-  margin: 20px 0 0;
+  margin: 20px auto 0;
   background: var(--surface-high);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -499,13 +486,19 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
     <a href="https://github.com/lightmorphic/notespice/blob/main/LICENSE">MIT License</a>
     <a href="https://github.com/lightmorphic/notespice/releases">Releases</a>
   </nav>
-  <p class="credit"><a href="https://github.com/lightmorphic/notespice">Notespice</a> - vibe-coded with Claude - Sponsored by
-    <span class="sponsor-mark" title="Sponsored by Lightmorphic">
-  <img class="sponsor-logo sponsor-logo-light" src="data:image/webp;base64,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" alt="Lightmorphic" width="125" height="25" />
-  <img class="sponsor-logo sponsor-logo-dark" src="data:image/webp;base64,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" alt="Lightmorphic" width="125" height="25" />
-  <svg class="sponsor-external-icon" viewBox="0 0 20 20" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M8 4H4v12h12v-4M12 4h4v4M16 4l-7 7"/></svg>
+  <p class="credit"><a href="https://github.com/lightmorphic/notespice">Notespice</a> - vibe-coded with Claude</p>
+  <a class="lightmorphic-badge" href="https://lightmorphic.co.uk" target="_blank" rel="noopener noreferrer" translate="no">
+    <span>Created by</span>
+    <img class="lightmorphic-badge-logo-dark" src="images/lightmorphic-dark-tb-250x50-sq.webp" alt="Lightmorphic" width="80" height="16" loading="lazy" />
+    <img class="lightmorphic-badge-logo-light" src="images/lightmorphic-tb-250x50-sq.webp" alt="Lightmorphic" width="80" height="16" loading="lazy" />
+    <span class="external-link-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <path d="M15 3h6v6"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
     </span>
-  </p>
+  </a>
 </footer>
 
 <script>

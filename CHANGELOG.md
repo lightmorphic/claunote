@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.8 — 2026-08-10
+
+- Centered the Why-section Lightmorphic badge instead of left-aligning
+  it.
+- Replaced the footer's old inline "Sponsored by" credit-line mark
+  with the same standalone Lightmorphic badge used in the Why
+  section, and removed the now-unused `.sponsor-mark`/`.sponsor-logo`
+  CSS and its duplicate base64-embedded logos.
+
 ## 1.8.7 — 2026-08-10
 
 - Added a standalone "Created by Lightmorphic" badge under the Why
