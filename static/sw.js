@@ -7,7 +7,7 @@
 // request always goes straight to the network; caching that would
 // mean occasionally showing stale notes, which is a much worse outcome
 // for a notes app than "this one request failed."
-const SHELL_CACHE = "notespice-shell-v4";
+const SHELL_CACHE = "notespice-shell-v5";
 const SHELL_FILES = [
   "/",
   "/app.js",
@@ -15,8 +15,7 @@ const SHELL_FILES = [
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/fonts/geist.woff2",
-  "/fonts/geist-ext.woff2",
+  "/fonts/manrope.woff2",
 ];
 
 self.addEventListener("install", (event) => {

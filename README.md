@@ -34,7 +34,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for version history.
 - Argon2id password hashing, per-IP login rate limiting, and a
   handful of other deliberate security choices (see
   [Security notes](#security-notes))
-- Self-hosted [Geist](https://vercel.com/font) typeface: no font CDN,
+- Self-hosted [Manrope](https://github.com/sharanda/manrope) typeface: no font CDN,
   no external font request of any kind
 
 ## Storage
@@ -316,7 +316,7 @@ notespice/
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # service worker (app shell only, no note data)
 │   ├── icons/
-│   ├── fonts/                # self-hosted Geist (variable weight)
+│   ├── fonts/                # self-hosted Manrope (variable weight)
 │   └── images/                # Lightmorphic badge logos
 ├── tests/
 │   └── e2e-roundtrip.js      # 58-scenario Writer<->Markdown suite (real browser)

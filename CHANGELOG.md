@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.6 — 2026-08-10
+
+- Switched the app's own typeface from self-hosted Geist to
+  self-hosted Manrope (`static/fonts/manrope.woff2`), matching the
+  notespice.org site and Lightmorphic's house font. One variable file
+  covers weight 200-800; the two Latin/Latin-ext Geist files and their
+  license are removed. Service worker shell cache bumped v4 -> v5 to
+  drop the old font files and pick up the new one.
+
 ## 1.8.5 — 2026-08-10
 
 - Added `.github/workflows/pages.yml` to deploy `site/` to GitHub
