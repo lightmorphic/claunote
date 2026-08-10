@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.5 — 2026-08-10
+
+- Added `.github/workflows/pages.yml` to deploy `site/` to GitHub
+  Pages on every push to `main` that touches it, matching the
+  repo-owned-Pages-source-is-GitHub-Actions setup on notespice.org.
+
 ## 1.8.4 — 2026-08-10
 
 - Switched the notespice.org site's typeface from an embedded-base64
