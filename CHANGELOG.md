@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.7 — 2026-08-10
+
+- Added a standalone "Created by Lightmorphic" badge under the Why
+  section's text on the notespice.org site, same pill shape as the
+  one already in the app and in the footer credit line. Logo files
+  moved to `site/images/` instead of embedding another pair of
+  base64 blobs in `index.html`.
+
 ## 1.8.6 — 2026-08-10
 
 - Switched the app's own typeface from self-hosted Geist to

@@ -277,6 +277,37 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
 }
 .sponsor-external-icon { width: 12px; height: 12px; flex-shrink: 0; }
 
+/* Standalone "Created by Lightmorphic" pill, same shape as the one in
+   the app itself. The logo file swaps for theme, same reasoning as
+   .sponsor-mark above. */
+.lightmorphic-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 20px 0 0;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 11px 5px 8px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.lightmorphic-badge:hover { background: var(--hover-layer); border-color: var(--text-muted); }
+.lightmorphic-badge img { display: block; height: 16px; width: auto; }
+.lightmorphic-badge .external-link-icon { display: block; width: 10px; height: 10px; opacity: 0.6; }
+.lightmorphic-badge .external-link-icon svg { width: 100%; height: 100%; }
+.lightmorphic-badge img.lightmorphic-badge-logo-dark { display: none; }
+.lightmorphic-badge img.lightmorphic-badge-logo-light { display: block; }
+@media (prefers-color-scheme: dark) {
+  .lightmorphic-badge img.lightmorphic-badge-logo-dark { display: block; }
+  .lightmorphic-badge img.lightmorphic-badge-logo-light { display: none; }
+}
+
 @media (max-width: 640px) {
   .app-window { height: 520px; flex-direction: column; }
   .demo-sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
@@ -375,6 +406,18 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
   <h2>Your notes are just files. That's the whole idea.</h2>
   <p class="lead">Notespice keeps your notes as <strong>plain markdown files on disk</strong> &mdash; no database, no proprietary format, nothing you can't open in any other editor the moment you stop using this one.</p>
   <p class="lead">There's no account system, no subscription, and no third-party server holding your notes. It's one container, one folder of <code>.md</code> files, and a full GitHub Flavored Markdown editor that works the same on your phone and your laptop.</p>
+  <a class="lightmorphic-badge" href="https://lightmorphic.co.uk" target="_blank" rel="noopener noreferrer" translate="no">
+    <span>Created by</span>
+    <img class="lightmorphic-badge-logo-dark" src="images/lightmorphic-dark-tb-250x50-sq.webp" alt="Lightmorphic" width="80" height="16" loading="lazy" />
+    <img class="lightmorphic-badge-logo-light" src="images/lightmorphic-tb-250x50-sq.webp" alt="Lightmorphic" width="80" height="16" loading="lazy" />
+    <span class="external-link-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <path d="M15 3h6v6"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+    </span>
+  </a>
 </section>
 
 <hr />
