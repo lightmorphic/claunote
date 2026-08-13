@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0 — 2026-07-28
+
+- Added the OCI `org.opencontainers.image.source` label to the
+  Docker image, so GHCR automatically links the published package
+  back to this repository.
+
 ## 1.5.9 — 2026-07-28
 
 - Typeface changed from Urbanist to Geist, everywhere — UI, Writer,

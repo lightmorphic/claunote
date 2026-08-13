@@ -17,6 +17,11 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 WORKDIR /app
 
+# Links the GHCR package to the repository automatically.
+LABEL org.opencontainers.image.source="https://github.com/FOSSCharlie/notespice"
+LABEL org.opencontainers.image.description="Notespice — self-hosted, database-less markdown notes"
+LABEL org.opencontainers.image.licenses="MIT"
+
 # Patch OS packages at build time rather than trusting whatever was
 # baked into the base image when it was last published. curl is added
 # solely so HEALTHCHECK below has something to probe with.
