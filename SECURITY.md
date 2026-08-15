@@ -1,6 +1,6 @@
 # Security Policy
 
-Notespice is a personal, single-maintainer project, not a company or a
+Claunote is a personal, single-maintainer project, not a company or a
 team with a dedicated security function. This document sets realistic
 expectations rather than promising something that isn't true.
 
@@ -41,7 +41,7 @@ commitments, not on an SLA. Best-effort, not guaranteed:
 
 ## Scope
 
-This policy covers the Notespice application code itself (this
+This policy covers the Claunote application code itself (this
 repository): the Rust backend, the frontend, the Dockerfile, and the CI
 workflow. It does not cover:
 - Vulnerabilities in dependencies themselves (report those upstream, to

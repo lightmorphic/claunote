@@ -1,7 +1,7 @@
 services:
-  notespice:
-    image: ghcr.io/lightmorphic/notespice:latest
-    container_name: notespice
+  claunote:
+    image: ghcr.io/lightmorphic/claunote:latest
+    container_name: claunote
     restart: unless-stopped
     environment:
       NOTES_USERNAME: "admin"
@@ -11,7 +11,7 @@ services:
       - /opt/media/notes:/notes
       # Notes (*.md) and attachments (files/) live here -- this is the
       # vault, the one directory worth backing up.
-      - /opt/notespice:/data
+      - /opt/claunote:/data
       # App-only state (currently just the recently-viewed list, used
       # for sidebar ordering) -- not notes, safe to lose, kept separate
       # on purpose so it's never mixed in with your actual data.

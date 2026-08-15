@@ -18,8 +18,8 @@ FROM debian:bookworm-slim
 WORKDIR /app
 
 # Links the GHCR package to the repository automatically.
-LABEL org.opencontainers.image.source="https://github.com/FOSSCharlie/notespice"
-LABEL org.opencontainers.image.description="Notespice - self-hosted, database-less markdown notes"
+LABEL org.opencontainers.image.source="https://github.com/lightmorphic/claunote"
+LABEL org.opencontainers.image.description="Claunote - self-hosted, database-less markdown notes"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Patch OS packages at build time rather than trusting whatever was
@@ -34,7 +34,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 # one explicitly.
 RUN groupadd -g 1000 notes && useradd -u 1000 -g notes -M -s /usr/sbin/nologin notes
 
-COPY --from=build /app/target/release/notespice ./notespice
+COPY --from=build /app/target/release/claunote ./claunote
 COPY static ./static
 
 RUN mkdir -p /notes /data && chown -R notes:notes /app /notes /data
@@ -52,4 +52,4 @@ VOLUME ["/notes", "/data"]
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f "http://localhost:${NOTES_PORT}/" || exit 1
 
-CMD ["./notespice"]
+CMD ["./claunote"]

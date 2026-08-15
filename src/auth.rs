@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
-pub const SESSION_COOKIE_NAME: &str = "notespice_session";
+pub const SESSION_COOKIE_NAME: &str = "claunote_session";
 const SESSION_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 14); // 14 days
 const MAX_LOGIN_ATTEMPTS: u32 = 8;
 const LOGIN_ATTEMPT_WINDOW: Duration = Duration::from_secs(15 * 60);

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0 — 2026-08-15
+
+Forked from [Notespice](https://github.com/lightmorphic/notespice) as
+Claunote, a separate ongoing project from this point forward.
+Renamed everywhere it appears — package name, binary, Docker image
+(`ghcr.io/lightmorphic/claunote`), session cookie, PWA manifest,
+service worker cache, README, and the marketing site (now served at
+claunote.lightmorphic.co.uk instead of notespice.org). Version reset
+to 0.1.0 for Claunote's own release train; everything below this line
+is inherited history from before the fork and is left as written.
+
 ## 1.8.9 — 2026-08-10
 
 - Centered the login screen's logo and "Notespice" heading; it was

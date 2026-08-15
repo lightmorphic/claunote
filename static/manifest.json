@@ -1,6 +1,6 @@
 {
-  "name": "Notespice",
-  "short_name": "Notespice",
+  "name": "Claunote",
+  "short_name": "Claunote",
   "description": "A self-hosted, database-less notes app: plain markdown files, full GitHub Flavored Markdown support.",
   "start_url": "/",
   "scope": "/",

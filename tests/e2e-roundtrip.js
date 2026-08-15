@@ -1,4 +1,4 @@
-// Notespice end-to-end Writer <-> Markdown round-trip suite.
+// Claunote end-to-end Writer <-> Markdown round-trip suite.
 //
 // Runs against a REAL browser and a REAL running server - not jsdom -
 // because this project's history proved that contenteditable behavior
@@ -7,7 +7,7 @@
 // To run:
 //   1. Start the app:  NOTES_USERNAME=admin NOTES_PASSWORD=demo1234 \
 //        NOTES_DIR=/tmp/nsp-test/notes NOTES_DATA_DIR=/tmp/nsp-test/data \
-//        NOTES_PORT=8099 NOTES_INSECURE_COOKIES=true ./target/release/notespice
+//        NOTES_PORT=8099 NOTES_INSECURE_COOKIES=true ./target/release/claunote
 //   2. npm install playwright (and its chromium), adjust the two
 //      executablePath/require lines below for your machine.
 //   3. node tests/e2e-roundtrip.js

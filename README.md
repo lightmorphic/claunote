@@ -1,6 +1,6 @@
-![Notespice logo](docs/logo.png)
+![Claunote logo](docs/logo.png)
 
-# Notespice
+# Claunote
 
 A self-hosted, database-less notes app. Every note is a plain markdown
 file on disk (no database, ever) with a Rust backend, a full
@@ -39,12 +39,12 @@ See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
 ## Storage
 
-Notespice stores notes as individual markdown files in one directory.
+Claunote stores notes as individual markdown files in one directory.
 No database, no proprietary format: the filename *is* the note title,
 and attachments live in a `files/` subfolder right alongside. That's
 the entire data model. `ls` the directory, open a note in any text
 editor, back it up with `rsync`, or stop using this app entirely;
-nothing is ever locked away in a format only Notespice understands.
+nothing is ever locked away in a format only Claunote understands.
 
 See [Data model](#data-model) below for the full detail, including how
 search, recently-viewed tracking, and attachments all fit into that
@@ -58,10 +58,10 @@ Requires a reasonably current stable Rust toolchain. Install via
 [rustup](https://rustup.rs) if your OS package manager's version is old.
 
 ```bash
-git clone https://github.com/lightmorphic/notespice.git
-cd notespice
+git clone https://github.com/lightmorphic/claunote.git
+cd claunote
 cargo build --release
-NOTES_PASSWORD=changeMe123 NOTES_DIR=./notes NOTES_DATA_DIR=./appdata ./target/release/notespice
+NOTES_PASSWORD=changeMe123 NOTES_DIR=./notes NOTES_DATA_DIR=./appdata ./target/release/claunote
 ```
 
 Open <http://localhost:8080>. Notes are written to `./notes`, as `.md`
@@ -79,62 +79,62 @@ recently-viewed list) lives separately under `./appdata`.
    [Automatic image publishing](#automatic-image-publishing))
 
    ```bash
-   docker pull ghcr.io/lightmorphic/notespice:latest
-   sudo mkdir -p /opt/media/notes /opt/notespice
-   sudo chown -R 1000:1000 /opt/media/notes /opt/notespice
+   docker pull ghcr.io/lightmorphic/claunote:latest
+   sudo mkdir -p /opt/media/notes /opt/claunote
+   sudo chown -R 1000:1000 /opt/media/notes /opt/claunote
    docker run -p 8080:8080 \
      -e NOTES_PASSWORD=changeMe123 \
      -v /opt/media/notes:/notes \
-     -v /opt/notespice:/data \
-     ghcr.io/lightmorphic/notespice:latest
+     -v /opt/claunote:/data \
+     ghcr.io/lightmorphic/claunote:latest
    ```
 
 2. Or build locally
 
    ```bash
-   docker build -t notespice .
-   sudo mkdir -p /opt/media/notes /opt/notespice
-   sudo chown -R 1000:1000 /opt/media/notes /opt/notespice
+   docker build -t claunote .
+   sudo mkdir -p /opt/media/notes /opt/claunote
+   sudo chown -R 1000:1000 /opt/media/notes /opt/claunote
    docker run -p 8080:8080 \
      -e NOTES_PASSWORD=changeMe123 \
      -v /opt/media/notes:/notes \
-     -v /opt/notespice:/data \
-     notespice
+     -v /opt/claunote:/data \
+     claunote
    ```
 
 3. Docker Compose
 
    ```yaml
    services:
-     notespice:
-       image: ghcr.io/lightmorphic/notespice:latest
-       container_name: notespice
+     claunote:
+       image: ghcr.io/lightmorphic/claunote:latest
+       container_name: claunote
        restart: unless-stopped
        environment:
          NOTES_USERNAME: "admin"
          NOTES_PASSWORD: "changeMe!"
        volumes:
          - /opt/media/notes:/notes
-         - /opt/notespice:/data
+         - /opt/claunote:/data
        ports:
          - "8080:8080"
    ```
 
    ```bash
-   sudo mkdir -p /opt/media/notes /opt/notespice
-   sudo chown -R 1000:1000 /opt/media/notes /opt/notespice
+   sudo mkdir -p /opt/media/notes /opt/claunote
+   sudo chown -R 1000:1000 /opt/media/notes /opt/claunote
    docker compose up -d
    ```
 
 > **Note:** the container runs as a non-root user (UID/GID 1000), not
 > root. After creating the data directory (or if you're upgrading an
 > existing install), run the `chown` command above so the container
-> can actually write to the mounted folder. Without it, Notespice
+> can actually write to the mounted folder. Without it, Claunote
 > will fail to create or update notes.
 
 Open <http://localhost:8080>. Notes (`*.md`) and attachments (`files/`)
 end up under `/opt/media/notes`, and that's the one directory worth
-backing up. `/opt/notespice` holds only app-internal state (currently
+backing up. `/opt/claunote` holds only app-internal state (currently
 just the recently-viewed list used for sidebar ordering), not notes.
 It's safe to lose, and kept separate on purpose so it's never mixed in
 with your actual data. The `docker-compose.yml` itself can live wherever
@@ -159,7 +159,7 @@ docker compose up -d
 ## Automatic image publishing
 
 `.github/workflows/docker-publish.yml` builds and pushes the image to
-`ghcr.io/lightmorphic/notespice` on every push to `main`, plus a weekly
+`ghcr.io/lightmorphic/claunote` on every push to `main`, plus a weekly
 scheduled rebuild so OS-level security patches keep landing even
 without a code change. It authenticates with a repository secret named
 `GHCR_PAT` (a personal access token with the `write:packages` scope).
@@ -179,7 +179,7 @@ tab if you want to `docker pull` it without authenticating.
 
 ## GitHub Flavored Markdown support
 
-Notespice targets full [GitHub Flavored Markdown](https://github.github.com/gfm/),
+Claunote targets full [GitHub Flavored Markdown](https://github.github.com/gfm/),
 plus the callout/alert syntax GitHub's own renderer supports on top of
 that spec. The toolbar covers all of it:
 
@@ -196,9 +196,9 @@ that spec. The toolbar covers all of it:
   `> [!WARNING]`, `> [!CAUTION]`) rendered with the same colored-box
   treatment GitHub.com uses, not just as plain blockquote text
 
-Every file Notespice writes is plain, spec-compliant markdown. Open it
+Every file Claunote writes is plain, spec-compliant markdown. Open it
 on GitHub, in another editor, or in a terminal, and it reads correctly
-regardless of whether Notespice is involved at all. The editor is a
+regardless of whether Claunote is involved at all. The editor is a
 small hand-written markdown ⇄ HTML converter built specifically for
 this app: no external editor library, no CDN dependency, nothing to
 version-mismatch or break. It only implements the GFM subset this
@@ -250,7 +250,7 @@ called `note-name` when `note-name.md` already exists produces
 `note-name(1).md`; import it again and you get `note-name(2).md`, and
 so on. Re-importing an export you already have, in other words, adds a
 duplicate copy rather than silently replacing anything. (Imported
-attachments use Notespice's regular file-upload collision handling
+attachments use Claunote's regular file-upload collision handling
 instead, a `-2`, `-3`, etc. suffix, since that's the same code path
 as a normal upload through the editor.)
 
@@ -302,7 +302,7 @@ than fetched with JavaScript. Uploads are capped at 20MB per file.
 ## Project Structure
 
 ```
-notespice/
+claunote/
 ├── src/                      # Rust backend (axum)
 │   ├── main.rs
 │   ├── auth.rs               # password hashing, sessions, rate limiting
@@ -350,7 +350,7 @@ the converter, or Enter/paste handling should keep that suite at
 
 ## License
 
-Notespice is free software, licensed under the MIT License. See the
+Claunote is free software, licensed under the MIT License. See the
 [LICENSE](./LICENSE) file for the full text.
 
 ## Disclaimer

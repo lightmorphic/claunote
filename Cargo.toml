@@ -1,11 +1,11 @@
 [package]
-name = "notespice"
-version = "1.8.9"
+name = "claunote"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
 
 [[bin]]
-name = "notespice"
+name = "claunote"
 path = "src/main.rs"
 
 # NOTE: these are the current, un-pinned crate versions as of writing.

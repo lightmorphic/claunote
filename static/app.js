@@ -266,7 +266,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ---------- markdown <-> HTML conversion ----------
-// Notespice's own converter - no external editor library, no CDN
+// Claunote's own converter - no external editor library, no CDN
 // dependency. Supports the full GFM feature set this app's toolbar
 // exposes: headings 1-6, bold/italic/strikethrough/inline code, all
 // three list types with nesting, blockquotes, fenced code blocks,
@@ -1486,7 +1486,7 @@ function switchMode(next) {
   // The server reports its own version (from Cargo.toml at compile
   // time), so the sidebar footer always shows which build is running.
   if (status.version) {
-    el("version-link").textContent = "Notespice v" + status.version;
+    el("version-link").textContent = "Claunote v" + status.version;
   }
   if (status.logged_in) {
     showApp();

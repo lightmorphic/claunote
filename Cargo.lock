@@ -556,8 +556,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "notespice"
-version = "1.8.9"
+name = "claunote"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
