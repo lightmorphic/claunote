@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1 — 2026-08-17
+
+Removed every incidental comparison to Notespice from the site,
+README, and code comments — left exactly one, deliberate mention: a
+recommendation for people who want a plain notepad with no MCP and
+nothing to set up beyond a password.
+
 ## 0.4.0 — 2026-08-17
 
 - **Enforced password strength**: minimum 10 characters plus an

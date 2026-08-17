@@ -12,11 +12,10 @@
 // password - changing that from the app's Settings panel can't break
 // this server, because it was never involved.
 //
-// Unlike Notespice's version of this (optional, off by default, token
-// optional — built for trusted local/tailnet use), this server assumes
-// it may be reachable from the public internet: the bearer token is
-// mandatory, checked in constant time, and requests are rate-limited
-// per source IP on top of whatever the reverse proxy already does.
+// Built assuming it may be reachable from the public internet: the
+// bearer token is mandatory, checked in constant time, and requests
+// are rate-limited per source IP on top of whatever the reverse proxy
+// already does.
 //
 // Environment:
 //   NOTES_URL          base URL of the Claunote app   (default http://claunote:8080)
@@ -72,9 +71,8 @@ if (!currentSettings().token || currentSettings().token.length < 20) {
     "No usable MCP token found (checked " +
       SETTINGS_FILE +
       " and MCP_TOKEN) — this server is meant to run reachable from " +
-      "the internet, unlike Notespice's optional/local-only version, " +
-      "so it refuses to start without one. Mount the app's data volume " +
-      "read-only here, or set MCP_TOKEN directly."
+      "the internet, so it refuses to start without one. Mount the " +
+      "app's data volume read-only here, or set MCP_TOKEN directly."
   );
   process.exit(1);
 }

@@ -5,6 +5,11 @@
 A self-hosted, database-less notes app. Every note is a plain markdown
 file on disk (no database, ever) with a Rust backend, a full
 GitHub Flavored Markdown toolbar, and an installable PWA frontend.
+Built-in MCP server, so Claude can read and edit your notes directly.
+
+Prefer a plain notepad with no MCP, no Claude connection, nothing to
+set up beyond a password? [Notespice](https://github.com/lightmorphic/notespice)
+is our other notes app, built for exactly that.
 
 > ⚠️ Vibe coded with [Claude](https://claude.ai).
 
@@ -351,9 +356,8 @@ to disclose something new.
 - `Strict-Transport-Security` is sent automatically whenever
   `NOTES_INSECURE_COOKIES` isn't set — the same signal already used for
   the session cookie's `Secure` flag.
-- Unlike Notespice (built for trusted local/home-network use),
-  Claunote's `docker-compose.yml` assumes internet exposure by
-  default: both containers run with every Linux capability dropped,
+- `docker-compose.yml` assumes internet exposure by default: both
+  containers run with every Linux capability dropped,
   `no-new-privileges`, a read-only root filesystem, and memory/PID
   limits; both ports bind to `127.0.0.1` only, requiring a reverse
   proxy in front rather than facing the internet directly.

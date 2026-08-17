@@ -1,6 +1,6 @@
 {
   "name": "claunote-mcp",
-  "version": "0.3.3",
+  "version": "0.4.1",
   "description": "MCP server exposing Claunote notes to Claude over Streamable HTTP",
   "private": true,
   "main": "server.js",

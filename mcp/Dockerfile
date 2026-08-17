@@ -1,6 +1,5 @@
 # Claunote MCP server — companion container that exposes your notes
-# to Claude over the Model Context Protocol. Unlike Notespice's
-# optional/off-by-default version, this one is meant to run reachable
+# to Claude over the Model Context Protocol. Meant to run reachable
 # from the internet, so it enforces a mandatory bearer token itself
 # (see server.js) in addition to whatever sits in front of it.
 

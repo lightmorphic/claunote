@@ -432,7 +432,8 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
     </div>
   </div>
 
-  <p class="lead" style="margin-top: 24px;">Notespice had an experimental version of this &mdash; optional, off by default, a token you generated and pasted in by hand, meant for a trusted home network. Claunote's is the opposite default: a token exists from the moment it starts, checked in constant time, with its own rate limit and a connect/disconnect switch on top of whatever the reverse proxy already does. See <a href="#security">Security</a> for the rest.</p>
+  <p class="lead" style="margin-top: 24px;">A token exists from the moment the app first starts &mdash; nothing to generate or paste in by hand &mdash; checked in constant time, with its own rate limit and a connect/disconnect switch on top of whatever the reverse proxy already does. See <a href="#security">Security</a> for the rest.</p>
+  <p class="lead">Prefer a plain notepad with no MCP, no Claude connection, nothing to set up beyond a password? <a href="https://github.com/lightmorphic/notespice" target="_blank" rel="noopener">Notespice</a> is our other notes app, built for exactly that.</p>
 </section>
 
 <hr />
@@ -502,7 +503,7 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
 <section class="section" id="security">
   <p class="eyebrow">Security</p>
   <h2>Built assuming it's reachable from the internet.</h2>
-  <p class="lead">Notespice was built for a trusted home network. Claunote assumes the opposite &mdash; that it might sit on a public VPS behind a real domain &mdash; and is hardened accordingly, on top of everything it inherited (Argon2id password hashing, opaque server-side sessions, per-IP login rate limiting, path-traversal-safe title handling, zip-bomb-capped imports).</p>
+  <p class="lead">Built assuming it might sit on a public VPS behind a real domain, and hardened accordingly: Argon2id password hashing with enforced strength, optional two-factor authentication, opaque server-side sessions, per-IP login rate limiting, path-traversal-safe title handling, zip-bomb-capped imports.</p>
   <div class="feature-rows">
     <div class="feature-row">
       <div class="feature-icon">&#128274;</div>
