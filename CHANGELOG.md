@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-08-17
+
+- Renamed the GHCR-publishing secret from the generic `GHCR_PAT` to
+  `CLAUNOTE_GHCR_PAT`, so it's identifiable at a glance alongside
+  every other project's own publishing token instead of looking
+  identical to all of them.
+
 ## 0.2.0 — 2026-08-17
 
 The headline difference from Notespice: a built-in, hardened MCP

@@ -167,10 +167,10 @@ the app and the MCP server — to `ghcr.io/lightmorphic/claunote` and
 `ghcr.io/lightmorphic/claunote-mcp`, on every push to `main`, plus a
 weekly scheduled rebuild so OS-level security patches keep landing
 even without a code change. It authenticates with a repository secret
-named `GHCR_PAT` (a personal access token with the `write:packages`
-scope). Make sure both resulting packages are set to public in the
-repo's Packages tab if you want to `docker pull` them without
-authenticating.
+named `CLAUNOTE_GHCR_PAT` (a personal access token with the
+`write:packages` and `repo` scopes). Make sure both resulting
+packages are set to public in the repo's Packages tab if you want to
+`docker pull` them without authenticating.
 
 ## Claude integration (MCP)
 
