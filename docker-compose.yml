@@ -28,6 +28,11 @@ services:
       - /tmp
     mem_limit: 512m
     pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ---------------------------------------------------------------
   # MCP server — lets Claude (Claude Code, claude.ai custom
@@ -71,5 +76,10 @@ services:
       - /tmp
     mem_limit: 256m
     pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - claunote

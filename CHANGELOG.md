@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4 — 2026-08-17
+
+- Added Docker log rotation (`max-size: 10m`, `max-file: 3`) to both
+  containers — found during the `project-docker-final` audit that
+  neither had it, so logs could grow the disk unbounded over time.
+
 ## 0.3.3 — 2026-08-17
 
 `project-docker-final` audit pass:
