@@ -38,3 +38,12 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/claunote:latest
             ghcr.io/${{ env.OWNER_LC }}/claunote:${{ github.sha }}
+
+      - name: Build and push MCP server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./mcp
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/claunote-mcp:latest
+            ghcr.io/${{ env.OWNER_LC }}/claunote-mcp:${{ github.sha }}

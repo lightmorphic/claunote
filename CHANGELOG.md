@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.0 — 2026-08-17
+
+The headline difference from Notespice: a built-in, hardened MCP
+server, plus a security posture built for internet exposure rather
+than a trusted home network.
+
+- Restored and hardened the MCP companion server Notespice once had
+  and later removed (`mcp/`, Node.js, official MCP SDK, Streamable
+  HTTP). Same tools — `list_notes`, `read_note`, `search_notes`,
+  `create_note`, `update_note`, `append_to_note`, `delete_note` — but
+  `MCP_TOKEN` is now mandatory (the container refuses to start
+  without one) instead of optional, checked in constant time, plus
+  its own per-IP rate limit independent of the reverse proxy in
+  front of it. CI now also builds and publishes
+  `ghcr.io/lightmorphic/claunote-mcp`.
+- `docker-compose.yml` now assumes internet exposure by default:
+  both containers run with every capability dropped,
+  `no-new-privileges`, a read-only root filesystem, and memory/PID
+  limits; both ports bind to `127.0.0.1` only rather than every
+  interface, requiring a reverse proxy in front.
+- Added `Strict-Transport-Security` to the app's response headers,
+  sent automatically whenever secure-cookie mode is on (the same
+  signal already used for the session cookie's `Secure` flag).
+- Rebuilt the marketing site with its own identity instead of
+  mirroring Notespice's: a violet accent instead of amber, cooler
+  neutrals, copy led by the MCP integration instead of the
+  just-markdown-files pitch, and new "Built for Claude" and
+  "Security" sections.
+
 ## 0.1.0 — 2026-08-15
 
 Forked from [Notespice](https://github.com/lightmorphic/notespice) as

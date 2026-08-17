@@ -140,7 +140,21 @@ async fn main() -> anyhow::Result<()> {
             HeaderValue::from_static("no-referrer"),
         ))
         .layer(TraceLayer::new_for_http())
-        .with_state(state);
+        .with_state(state.clone());
+
+    // HSTS: only when secure_cookies is on (i.e. NOTES_INSECURE_COOKIES
+    // isn't set), the same signal already used for the cookie's Secure
+    // flag. Sending this over plain HTTP would tell browsers to demand
+    // HTTPS for an origin that can't actually serve it, locking out the
+    // local-testing case that flag exists for.
+    let app = if state.secure_cookies {
+        app.layer(SetResponseHeaderLayer::if_not_present(
+            header::STRICT_TRANSPORT_SECURITY,
+            HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+        ))
+    } else {
+        app
+    };
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("listening on {addr}");

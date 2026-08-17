@@ -36,6 +36,10 @@ See [CHANGELOG.md](./CHANGELOG.md) for version history.
   [Security notes](#security-notes))
 - Self-hosted [Manrope](https://github.com/sharanda/manrope) typeface: no font CDN,
   no external font request of any kind
+- Built-in MCP server so Claude (Claude Code, Claude Desktop) can list,
+  read, search, create, update, and delete your notes directly — ships
+  in `docker-compose.yml`, enabled by default (see
+  [Claude integration (MCP)](#claude-integration-mcp))
 
 ## Storage
 
@@ -158,13 +162,59 @@ docker compose up -d
 
 ## Automatic image publishing
 
-`.github/workflows/docker-publish.yml` builds and pushes the image to
-`ghcr.io/lightmorphic/claunote` on every push to `main`, plus a weekly
-scheduled rebuild so OS-level security patches keep landing even
-without a code change. It authenticates with a repository secret named
-`GHCR_PAT` (a personal access token with the `write:packages` scope).
-Make sure the resulting package is set to public in the repo's Packages
-tab if you want to `docker pull` it without authenticating.
+`.github/workflows/docker-publish.yml` builds and pushes both images —
+the app and the MCP server — to `ghcr.io/lightmorphic/claunote` and
+`ghcr.io/lightmorphic/claunote-mcp`, on every push to `main`, plus a
+weekly scheduled rebuild so OS-level security patches keep landing
+even without a code change. It authenticates with a repository secret
+named `GHCR_PAT` (a personal access token with the `write:packages`
+scope). Make sure both resulting packages are set to public in the
+repo's Packages tab if you want to `docker pull` them without
+authenticating.
+
+## Claude integration (MCP)
+
+A companion container exposes your notes to Claude over the
+[Model Context Protocol](https://modelcontextprotocol.io) (Streamable
+HTTP transport). It's a thin client of Claunote's own API: it logs in
+with the same credentials as the web app and goes through the same
+endpoints, so search indexing, title sanitization, and collision
+handling behave exactly as in the app. Tools exposed: `list_notes`,
+`read_note`, `search_notes`, `create_note`, `update_note`,
+`append_to_note`, `delete_note`.
+
+Unlike a purely local tool, this is built assuming the port may end up
+reachable over the internet, so **`MCP_TOKEN` is mandatory** — the
+container refuses to start without one, and it's checked in constant
+time. Generate a real value before first run:
+
+```bash
+openssl rand -hex 32
+```
+
+Put that value in the `claunote-mcp` service's `MCP_TOKEN`, and
+configure your Claude client to send it as a bearer token — the two
+must match exactly. `NOTES_PASSWORD` for `claunote-mcp` must also
+match the app's own `NOTES_PASSWORD`, same as before.
+
+**Connect Claude** to `https://<your-domain>/mcp` (put port 4200
+behind the same reverse proxy/TLS as the app — never expose it
+directly):
+
+- **Claude Code:**
+  `claude mcp add --transport http claunote https://<your-domain>/mcp --header "Authorization: Bearer <token>"`
+- **claude.ai (Chat) custom connectors cannot send custom headers**, so
+  they can't authenticate to this server as configured. Claude Code
+  and Claude Desktop (via a local HTTP-proxy shim that injects the
+  header) are the supported paths.
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `NOTES_URL` | no | `http://claunote:8080` | Base URL of the Claunote app |
+| `NOTES_USERNAME` | no | `admin` | Same login as the web app |
+| `NOTES_PASSWORD` | **yes** | — | Same password as the web app |
+| `MCP_PORT` | no | `4200` | Port the MCP server listens on |
+| `MCP_TOKEN` | **yes** | — | Bearer token, min. 20 characters. The container will not start without one. |
 
 ## Environment variables
 
@@ -230,6 +280,19 @@ to disclose something new.
   attachment cap plus multipart overhead), and zip imports are
   additionally capped on *decompressed* size, 20MB per entry and 200MB
   per archive, so a crafted "zip bomb" can't exhaust the server.
+- `Strict-Transport-Security` is sent automatically whenever
+  `NOTES_INSECURE_COOKIES` isn't set — the same signal already used for
+  the session cookie's `Secure` flag.
+- Unlike Notespice (built for trusted local/home-network use),
+  Claunote's `docker-compose.yml` assumes internet exposure by
+  default: both containers run with every Linux capability dropped,
+  `no-new-privileges`, a read-only root filesystem, and memory/PID
+  limits; both ports bind to `127.0.0.1` only, requiring a reverse
+  proxy in front rather than facing the internet directly.
+- The MCP server (see [Claude integration (MCP)](#claude-integration-mcp))
+  requires a bearer token — the container won't start without one —
+  checked in constant time, plus its own per-IP rate limit independent
+  of whatever the reverse proxy already does.
 
 ## Export / Import
 
@@ -320,6 +383,10 @@ claunote/
 │   └── images/                # Lightmorphic badge logos
 ├── tests/
 │   └── e2e-roundtrip.js      # 58-scenario Writer<->Markdown suite (real browser)
+├── mcp/                       # Companion MCP server (Node.js)
+│   ├── server.js
+│   ├── package.json
+│   └── Dockerfile
 ├── docs/
 │   └── logo.png
 ├── Cargo.toml

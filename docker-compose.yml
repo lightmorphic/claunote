@@ -16,4 +16,54 @@ services:
       # for sidebar ordering) -- not notes, safe to lose, kept separate
       # on purpose so it's never mixed in with your actual data.
     ports:
-      - "8080:8080"
+      # Loopback-only by default: this app is meant to sit behind a
+      # TLS-terminating reverse proxy (nginx, Caddy, Traefik, Tailscale
+      # Serve), not face the internet directly. Change to "8080:8080"
+      # only for local network access with no reverse proxy in front.
+      - "127.0.0.1:8080:8080"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    pids_limit: 256
+
+  # ---------------------------------------------------------------
+  # MCP server — lets Claude (Claude Code, claude.ai custom
+  # connectors, Claude Desktop) list, read, search, create, update,
+  # and delete your notes through the Model Context Protocol.
+  #
+  # Unlike a general-purpose local tool, this is meant to be reachable
+  # over the internet (behind the same reverse proxy as the app
+  # itself), so MCP_TOKEN is mandatory — the container refuses to
+  # start without one. Generate a real value before first run:
+  #   openssl rand -hex 32
+  #
+  # Then connect Claude to  https://<your-domain>/mcp
+  #   - Claude Code:  claude mcp add --transport http claunote \
+  #       https://<your-domain>/mcp --header "Authorization: Bearer <token>"
+  #   - claude.ai custom connectors can't send custom headers, so they
+  #     can't use this service as configured — Claude Code and Claude
+  #     Desktop (via a local http-proxy shim) are the supported paths.
+  # ---------------------------------------------------------------
+  claunote-mcp:
+    image: ghcr.io/lightmorphic/claunote-mcp:latest
+    container_name: claunote-mcp
+    restart: unless-stopped
+    environment:
+      NOTES_URL: "http://claunote:8080"
+      NOTES_USERNAME: "admin"
+      NOTES_PASSWORD: "changeMe!" # must match the app's password above
+      MCP_TOKEN: "changeMe-generate-a-real-token!" # openssl rand -hex 32
+    ports:
+      - "127.0.0.1:4200:4200"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    pids_limit: 128
+    depends_on:
+      - claunote
