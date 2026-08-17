@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.5 — 2026-08-17
+
+- Added CPU limits (0.5 cores app, 0.25 MCP) — the last open item from
+  the `project-docker-final` audit. lm002 only has 2 cores shared
+  across ~6 other services, so kept conservative, same 2:1 ratio as
+  the existing memory limits.
+
 ## 0.3.4 — 2026-08-17
 
 - Added Docker log rotation (`max-size: 10m`, `max-file: 3`) to both

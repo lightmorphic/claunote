@@ -28,6 +28,7 @@ services:
       - /tmp
     mem_limit: 512m
     pids_limit: 256
+    cpus: 0.5
     logging:
       driver: json-file
       options:
@@ -76,6 +77,7 @@ services:
       - /tmp
     mem_limit: 256m
     pids_limit: 128
+    cpus: 0.25
     logging:
       driver: json-file
       options:
