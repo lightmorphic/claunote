@@ -174,6 +174,15 @@ packages are set to public in the repo's Packages tab if you want to
 
 ## Claude integration (MCP)
 
+**This needs to be reachable from the open internet to actually work
+with Claude.** Claude Code, Claude Desktop, and claude.ai all run
+somewhere other than your own network, so they can't reach an MCP
+server that's only bound to your home LAN or a Tailscale-only address
+— there has to be a real public domain in front of it (see
+[Security notes](#security-notes) for how that's hardened). A
+Tailscale-only or LAN-only setup works fine for the web app itself,
+just not for the MCP connection.
+
 A companion container exposes your notes to Claude over the
 [Model Context Protocol](https://modelcontextprotocol.io) (Streamable
 HTTP transport). It's a thin client of Claunote's own API: every
@@ -238,6 +247,34 @@ start ignores them in favor of whatever's already saved. Changing a
 password signs out every active session, including the one that made
 the change — you'll be prompted to log back in.
 
+**Password requirements:** at least 10 characters, with an uppercase
+letter, a lowercase letter, a number, and a symbol — enforced both on
+the very first boot (`NOTES_PASSWORD`) and on every change made
+through Settings. A password already in place from before this
+requirement existed keeps working; it only applies going forward.
+
+## Two-factor authentication
+
+Enable it from Settings (gear icon) → **Two-factor authentication**.
+Standard TOTP — works with Google Authenticator, 1Password, Authy, or
+any other authenticator app:
+
+1. **Enable** shows a QR code (and a manual-entry key, for apps that
+   can't scan) — scan it, then enter the 6-digit code it produces to
+   confirm the app actually has the right secret before anything is
+   turned on.
+2. Confirming generates **8 one-time backup codes**, shown exactly
+   once. Save them somewhere safe — each works once, in place of a
+   TOTP code, if you lose access to your authenticator app. There's no
+   other recovery path for a self-hosted single-user app: no support
+   desk to call if both the password and the authenticator are gone.
+3. Logging in afterward asks for the code as a second step, after the
+   password succeeds. Backup codes work in the same field as a TOTP
+   code — no separate "use a backup code" mode to find.
+4. **Regenerate backup codes** or **Disable** both require re-entering
+   the current password, same sensitivity as changing the account
+   itself.
+
 ## Environment variables
 
 | Variable | Required | Default | Purpose |
@@ -289,6 +326,12 @@ to disclose something new.
   it's never logged. Changing the password via Settings requires the
   current one and invalidates every session, including the one making
   the change.
+- Password strength is enforced (min. 10 characters, upper/lower/
+  digit/symbol) on first boot and every later change - not just a
+  length check.
+- Optional TOTP two-factor authentication, with Argon2id-hashed
+  one-time backup codes for account recovery. See
+  [Two-factor authentication](#two-factor-authentication).
 - Sessions are opaque random tokens held server-side. The cookie
   itself carries no information, so nothing meaningful leaks if it's
   ever captured outside of TLS.

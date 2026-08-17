@@ -22,15 +22,25 @@
         <img src="/icons/icon-192.png" alt="" width="32" height="32" />
         <h1>Claunote</h1>
       </div>
-      <label>
-        Username
-        <input type="text" id="login-username" autocomplete="username" required />
-      </label>
-      <label>
-        Password
-        <input type="password" id="login-password" autocomplete="current-password" required />
-      </label>
-      <button type="submit">Log in</button>
+      <div id="login-step-password">
+        <label>
+          Username
+          <input type="text" id="login-username" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input type="password" id="login-password" autocomplete="current-password" required />
+        </label>
+      </div>
+      <div id="login-step-2fa" hidden>
+        <p class="settings-hint" style="margin: 0 0 4px;">Enter the 6-digit code from your authenticator app, or one of your backup codes.</p>
+        <label>
+          <span id="login-2fa-label">Authentication code</span>
+          <input type="text" id="login-2fa-code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" />
+        </label>
+        <button type="button" id="login-2fa-back-btn" class="settings-copy-btn" style="width: 100%; margin-top: 4px;">&larr; Back</button>
+      </div>
+      <button type="submit" id="login-submit-btn">Log in</button>
       <p id="login-error" class="error" hidden></p>
     </form>
   </div>
@@ -152,12 +162,65 @@
             <input type="text" id="account-new-username" autocomplete="username" />
           </label>
           <label>
-            New password <span class="settings-optional">(optional, min. 8 characters)</span>
+            New password <span class="settings-optional">(optional)</span>
             <input type="password" id="account-new-password" autocomplete="new-password" />
           </label>
+          <p class="settings-hint">If setting a new password: at least 10 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.</p>
           <p id="account-error" class="error" hidden></p>
           <button type="button" id="account-save-btn" class="settings-btn-primary">Save account changes</button>
           <p class="settings-hint">Saving signs you out everywhere, including here - you'll need to log back in with the new details.</p>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-header">
+            <h3>Two-factor authentication</h3>
+            <span id="twofa-status-badge" class="settings-hint">Loading&hellip;</span>
+          </div>
+          <p class="settings-hint">Adds a second step to logging in - a 6-digit code from an authenticator app (Google Authenticator, 1Password, Authy, etc.), on top of your password.</p>
+
+          <div id="twofa-disabled-view">
+            <button type="button" id="twofa-start-btn" class="settings-btn-primary">Enable two-factor authentication</button>
+          </div>
+
+          <div id="twofa-setup-view" hidden>
+            <p class="settings-hint">Scan this with your authenticator app, or enter the key manually.</p>
+            <img id="twofa-qr" alt="2FA setup QR code" width="180" height="180" style="border-radius: 12px; display: block; margin: 8px 0;" />
+            <label>
+              Manual entry key
+              <div class="settings-copy-row">
+                <input type="text" id="twofa-secret" readonly />
+                <button type="button" class="settings-copy-btn" data-copy-target="twofa-secret">Copy</button>
+              </div>
+            </label>
+            <label>
+              Enter the 6-digit code to confirm
+              <input type="text" id="twofa-confirm-code" inputmode="numeric" autocomplete="one-time-code" />
+            </label>
+            <p id="twofa-setup-error" class="error" hidden></p>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="twofa-confirm-btn" class="settings-btn-primary">Confirm and enable</button>
+              <button type="button" id="twofa-cancel-btn" class="settings-copy-btn">Cancel</button>
+            </div>
+          </div>
+
+          <div id="twofa-backup-codes-view" hidden>
+            <p class="settings-hint"><strong>Save these backup codes now — they're shown only once.</strong> Each works one time if you lose access to your authenticator app.</p>
+            <pre id="twofa-backup-codes" class="settings-command" style="user-select: text;"></pre>
+            <button type="button" id="twofa-backup-codes-done-btn" class="settings-btn-primary">I've saved these</button>
+          </div>
+
+          <div id="twofa-enabled-view" hidden>
+            <p class="settings-hint">Two-factor authentication is on.</p>
+            <label>
+              Current password, to make changes below
+              <input type="password" id="twofa-manage-password" autocomplete="current-password" />
+            </label>
+            <p id="twofa-manage-error" class="error" hidden></p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="twofa-regenerate-codes-btn" class="settings-copy-btn">Regenerate backup codes</button>
+              <button type="button" id="twofa-disable-btn" class="settings-btn-danger">Disable two-factor authentication</button>
+            </div>
+          </div>
         </section>
 
         <section class="settings-section">

@@ -93,6 +93,50 @@ pub async fn login(
     }
 
     match state.auth.login(&client_key, &body.username, &body.password) {
+        auth::LoginOutcome::Success(token) => {
+            let cookie = auth::build_session_cookie(&token, state.secure_cookies);
+            let mut resp = Json(serde_json::json!({ "ok": true })).into_response();
+            resp.headers_mut()
+                .insert(header::SET_COOKIE, cookie.parse().unwrap());
+            resp
+        }
+        // No cookie yet - the browser only gets a full session after
+        // the second step below succeeds. The pending token is a
+        // request-body value, not a cookie, since it's meant to be
+        // held only in memory for the few seconds this takes.
+        auth::LoginOutcome::NeedsTwoFactor(pending_token) => Json(serde_json::json!({
+            "needs_2fa": true,
+            "pending_token": pending_token,
+        }))
+        .into_response(),
+        auth::LoginOutcome::Failed => err(StatusCode::UNAUTHORIZED, "invalid username or password"),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct TwoFactorLoginRequest {
+    pending_token: String,
+    code: String,
+}
+
+pub async fn login_two_factor(
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Json(body): Json<TwoFactorLoginRequest>,
+) -> Response {
+    let client_key = addr.ip().to_string();
+
+    if state.auth.is_locked_out(&client_key) {
+        return err(
+            StatusCode::TOO_MANY_REQUESTS,
+            "too many failed attempts, try again in 15 minutes",
+        );
+    }
+
+    match state
+        .auth
+        .verify_two_factor_login(&client_key, &body.pending_token, &body.code)
+    {
         Some(token) => {
             let cookie = auth::build_session_cookie(&token, state.secure_cookies);
             let mut resp = Json(serde_json::json!({ "ok": true })).into_response();
@@ -100,7 +144,7 @@ pub async fn login(
                 .insert(header::SET_COOKIE, cookie.parse().unwrap());
             resp
         }
-        None => err(StatusCode::UNAUTHORIZED, "invalid username or password"),
+        None => err(StatusCode::UNAUTHORIZED, "invalid or expired code"),
     }
 }
 
@@ -210,11 +254,8 @@ pub async fn update_account(
         return err(StatusCode::BAD_REQUEST, "nothing to change");
     }
     if let Some(pw) = &body.new_password {
-        if pw.len() < 8 {
-            return err(
-                StatusCode::BAD_REQUEST,
-                "new password must be at least 8 characters",
-            );
+        if let Err(msg) = auth::validate_password_strength(pw) {
+            return err(StatusCode::BAD_REQUEST, msg);
         }
     }
     match state.auth.change_credentials(
@@ -223,6 +264,92 @@ pub async fn update_account(
         body.new_password,
     ) {
         Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Err(msg) => err(StatusCode::UNAUTHORIZED, msg),
+    }
+}
+
+// ---------- two-factor authentication settings ----------
+// All of these require an existing session (the same require_auth as
+// account changes, never the MCP token) - 2FA setup and account
+// credentials sit in the same trust tier.
+
+pub async fn two_factor_status(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    Json(serde_json::json!({ "enabled": state.auth.two_factor_enabled() })).into_response()
+}
+
+pub async fn start_two_factor_setup(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.auth.start_two_factor_setup() {
+        Ok((secret, otpauth_url, qr_data_uri)) => Json(serde_json::json!({
+            "secret": secret,
+            "otpauth_url": otpauth_url,
+            "qr": qr_data_uri,
+        }))
+        .into_response(),
+        Err(msg) => err(StatusCode::INTERNAL_SERVER_ERROR, msg),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct TwoFactorConfirmRequest {
+    code: String,
+}
+
+pub async fn confirm_two_factor_setup(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<TwoFactorConfirmRequest>,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.auth.confirm_two_factor_setup(&body.code) {
+        Ok(backup_codes) => Json(serde_json::json!({
+            "ok": true,
+            "backup_codes": backup_codes,
+        }))
+        .into_response(),
+        Err(msg) => err(StatusCode::BAD_REQUEST, msg),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct TwoFactorPasswordRequest {
+    current_password: String,
+}
+
+pub async fn disable_two_factor(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<TwoFactorPasswordRequest>,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.auth.disable_two_factor(&body.current_password) {
+        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Err(msg) => err(StatusCode::UNAUTHORIZED, msg),
+    }
+}
+
+pub async fn regenerate_backup_codes(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<TwoFactorPasswordRequest>,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.auth.regenerate_backup_codes(&body.current_password) {
+        Ok(backup_codes) => Json(serde_json::json!({ "backup_codes": backup_codes })).into_response(),
         Err(msg) => err(StatusCode::UNAUTHORIZED, msg),
     }
 }

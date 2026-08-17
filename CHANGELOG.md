@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.0 — 2026-08-17
+
+- **Enforced password strength**: minimum 10 characters plus an
+  upper/lower/digit/symbol mix, checked on first boot
+  (`NOTES_PASSWORD`) and every change made through Settings. Only
+  applies going forward — an existing password from before this
+  requirement keeps working.
+- **Two-factor authentication**, set up from Settings (gear icon):
+  standard TOTP with a QR code and manual-entry key, confirmed with a
+  real code from the authenticator app before it actually turns on.
+  Generates 8 one-time backup codes (Argon2id-hashed, shown once) for
+  recovery if the authenticator is lost. Login becomes a two-step
+  flow when enabled — password, then a 6-digit or backup code, via a
+  short-lived single-use token that proves nothing but "the password
+  step already passed" and expires in 5 minutes either way.
+  Regenerating backup codes or disabling both require the current
+  password, same sensitivity as changing the account itself.
+- Verified extensively before shipping: full backend flow via curl
+  (setup, confirm, wrong code, correct code, backup code use and
+  reuse-rejection, pending-token single-use even on failure, disable,
+  regenerate), and specifically that the new binary loads an
+  `.auth.json` written before this release (no `two_factor` field at
+  all) without any migration step or risk to an existing login.
+- README and the site now say plainly that the MCP connection needs a
+  real public domain — Claude Code, Desktop, and claude.ai all run
+  outside your own network, so a Tailscale/LAN-only address (fine for
+  the web app) can't be reached for MCP.
+
 ## 0.3.5 — 2026-08-17
 
 - Added CPU limits (0.5 cores app, 0.25 MCP) — the last open item from

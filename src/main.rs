@@ -43,9 +43,11 @@ async fn main() -> anyhow::Result<()> {
             "NOTES_PASSWORD environment variable is required, set it to a strong password"
         )
     })?;
-    if password.len() < 8 {
-        anyhow::bail!("NOTES_PASSWORD must be at least 8 characters");
-    }
+    // Strength is validated inside Auth::load_or_bootstrap, only on
+    // the actual first-ever run - not here, unconditionally, which
+    // would wrongly block every later restart against whatever
+    // NOTES_PASSWORD happens to still be sitting in docker-compose.yml
+    // (inert after the first run, but not absent).
     // Two separate directories, on purpose: NOTES_DIR is the actual
     // vault (notes + their files/ subfolder) - back this up, sync it,
     // whatever you like. NOTES_DATA_DIR is app-only bookkeeping
@@ -97,6 +99,7 @@ async fn main() -> anyhow::Result<()> {
 
     let api = Router::new()
         .route("/login", post(handlers::login))
+        .route("/login/2fa", post(handlers::login_two_factor))
         .route("/logout", post(handlers::logout))
         .route("/session", get(handlers::session_status))
         .route(
@@ -123,7 +126,15 @@ async fn main() -> anyhow::Result<()> {
             "/mcp-settings/connection",
             post(handlers::set_mcp_connection),
         )
-        .route("/account", post(handlers::update_account));
+        .route("/account", post(handlers::update_account))
+        .route("/2fa/status", get(handlers::two_factor_status))
+        .route("/2fa/setup", post(handlers::start_two_factor_setup))
+        .route("/2fa/confirm", post(handlers::confirm_two_factor_setup))
+        .route("/2fa/disable", post(handlers::disable_two_factor))
+        .route(
+            "/2fa/backup-codes/regenerate",
+            post(handlers::regenerate_backup_codes),
+        );
 
     let app = Router::new()
         .nest("/api", api)

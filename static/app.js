@@ -53,6 +53,7 @@ async function apiJson(path, options = {}) {
 function showLogin() {
   el("login-screen").hidden = false;
   el("app-screen").hidden = true;
+  showLoginPasswordStep();
 }
 
 function showApp() {
@@ -61,12 +62,77 @@ function showApp() {
 }
 
 // ---------- login ----------
+let pending2faToken = null; // set once the password step says 2FA is needed
+
+function showLoginPasswordStep() {
+  pending2faToken = null;
+  el("login-step-password").hidden = false;
+  el("login-step-2fa").hidden = true;
+  el("login-password").value = "";
+  el("login-2fa-code").value = "";
+  el("login-submit-btn").textContent = "Log in";
+}
+
+function showLogin2faStep() {
+  el("login-step-password").hidden = true;
+  el("login-step-2fa").hidden = false;
+  el("login-submit-btn").textContent = "Verify";
+  el("login-2fa-code").focus();
+}
+
+el("login-2fa-back-btn").addEventListener("click", () => {
+  el("login-error").hidden = true;
+  showLoginPasswordStep();
+});
+
+async function finishLogin() {
+  showApp();
+  try {
+    await loadNotes();
+  } catch (err) {
+    console.error("Failed to load notes after login:", err);
+    alert("Logged in, but failed to load your notes: " + err.message + "\n\nCheck the browser console for details.");
+  }
+}
+
 el("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const username = el("login-username").value;
-  const password = el("login-password").value;
   const errorEl = el("login-error");
   errorEl.hidden = true;
+
+  // Step 2: verifying a TOTP/backup code against the pending token
+  // the password step returned.
+  if (pending2faToken) {
+    const code = el("login-2fa-code").value.trim();
+    let res;
+    try {
+      res = await fetch("/api/login/2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pending_token: pending2faToken, code }),
+      });
+    } catch (err) {
+      errorEl.textContent = "could not reach the server";
+      errorEl.hidden = false;
+      return;
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: "verification failed" }));
+      errorEl.textContent = body.error || "verification failed";
+      errorEl.hidden = false;
+      // A pending token is single-use even on failure (server-side),
+      // so there's nothing left to retry against - back to the start.
+      showLoginPasswordStep();
+      return;
+    }
+    pending2faToken = null;
+    await finishLogin();
+    return;
+  }
+
+  // Step 1: username + password.
+  const username = el("login-username").value;
+  const password = el("login-password").value;
 
   let res;
   try {
@@ -89,13 +155,14 @@ el("login-form").addEventListener("submit", async (e) => {
     return;
   }
 
-  showApp();
-  try {
-    await loadNotes();
-  } catch (err) {
-    console.error("Failed to load notes after login:", err);
-    alert("Logged in, but failed to load your notes: " + err.message + "\n\nCheck the browser console for details.");
+  const body = await res.json().catch(() => ({}));
+  if (body.needs_2fa) {
+    pending2faToken = body.pending_token;
+    showLogin2faStep();
+    return;
   }
+
+  await finishLogin();
 });
 
 el("logout-btn").addEventListener("click", async () => {
@@ -138,7 +205,120 @@ async function loadSettingsPanel() {
     el("mcp-token").value = "";
     el("mcp-command").value = "";
   }
+
+  await loadTwoFactorPanel();
 }
+
+// ---------- two-factor authentication (Settings) ----------
+function showTwoFactorView(name) {
+  for (const id of ["twofa-disabled-view", "twofa-setup-view", "twofa-backup-codes-view", "twofa-enabled-view"]) {
+    el(id).hidden = id !== name;
+  }
+}
+
+async function loadTwoFactorPanel() {
+  el("twofa-setup-error").hidden = true;
+  el("twofa-manage-error").hidden = true;
+  el("twofa-manage-password").value = "";
+  el("twofa-confirm-code").value = "";
+  try {
+    const status = await apiJson("/2fa/status");
+    el("twofa-status-badge").textContent = status.enabled ? "Enabled" : "Disabled";
+    showTwoFactorView(status.enabled ? "twofa-enabled-view" : "twofa-disabled-view");
+  } catch (err) {
+    el("twofa-status-badge").textContent = "";
+    console.error("Failed to load 2FA status:", err);
+  }
+}
+
+el("twofa-start-btn").addEventListener("click", async () => {
+  try {
+    const setup = await apiJson("/2fa/setup", { method: "POST" });
+    el("twofa-qr").src = setup.qr;
+    el("twofa-secret").value = setup.secret;
+    el("twofa-confirm-code").value = "";
+    el("twofa-setup-error").hidden = true;
+    showTwoFactorView("twofa-setup-view");
+  } catch (err) {
+    alert("Failed to start 2FA setup: " + err.message);
+  }
+});
+
+el("twofa-cancel-btn").addEventListener("click", () => {
+  showTwoFactorView("twofa-disabled-view");
+});
+
+el("twofa-confirm-btn").addEventListener("click", async () => {
+  const errorEl = el("twofa-setup-error");
+  errorEl.hidden = true;
+  const code = el("twofa-confirm-code").value.trim();
+  try {
+    const result = await apiJson("/2fa/confirm", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+    el("twofa-backup-codes").textContent = result.backup_codes.join("\n");
+    showTwoFactorView("twofa-backup-codes-view");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.hidden = false;
+  }
+});
+
+el("twofa-backup-codes-done-btn").addEventListener("click", () => {
+  el("twofa-status-badge").textContent = "Enabled";
+  showTwoFactorView("twofa-enabled-view");
+});
+
+el("twofa-regenerate-codes-btn").addEventListener("click", async () => {
+  const errorEl = el("twofa-manage-error");
+  errorEl.hidden = true;
+  const current_password = el("twofa-manage-password").value;
+  if (!current_password) {
+    errorEl.textContent = "current password is required";
+    errorEl.hidden = false;
+    return;
+  }
+  if (!confirm("Regenerate backup codes? Every existing backup code stops working immediately.")) {
+    return;
+  }
+  try {
+    const result = await apiJson("/2fa/backup-codes/regenerate", {
+      method: "POST",
+      body: JSON.stringify({ current_password }),
+    });
+    el("twofa-backup-codes").textContent = result.backup_codes.join("\n");
+    showTwoFactorView("twofa-backup-codes-view");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.hidden = false;
+  }
+});
+
+el("twofa-disable-btn").addEventListener("click", async () => {
+  const errorEl = el("twofa-manage-error");
+  errorEl.hidden = true;
+  const current_password = el("twofa-manage-password").value;
+  if (!current_password) {
+    errorEl.textContent = "current password is required";
+    errorEl.hidden = false;
+    return;
+  }
+  if (!confirm("Disable two-factor authentication? Logging in will only need your password again.")) {
+    return;
+  }
+  try {
+    await apiJson("/2fa/disable", {
+      method: "POST",
+      body: JSON.stringify({ current_password }),
+    });
+    el("twofa-status-badge").textContent = "Disabled";
+    showTwoFactorView("twofa-disabled-view");
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.hidden = false;
+  }
+});
 
 el("settings-btn").addEventListener("click", () => {
   loadSettingsPanel();

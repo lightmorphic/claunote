@@ -394,6 +394,7 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
   <h2>A companion MCP server, not a copy-paste workaround.</h2>
   <p class="lead">Claunote ships a second, purpose-built container that speaks the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> &mdash; it's a thin client of Claunote's own API, so every tool call goes through the exact same search indexing, title handling, and collision rules as the web app itself.</p>
   <p class="lead">Nothing to generate by hand: open Settings (the gear icon in the sidebar) and a bearer token is already waiting, along with the exact connect command, a one-click regenerate, and a Connected/Disconnected switch that cuts off access instantly without touching the token itself.</p>
+  <p class="lead"><strong>This needs a real public domain to actually work with Claude</strong> &mdash; Claude Code, Claude Desktop, and claude.ai all run outside your own network, so a Tailscale-only or LAN-only address (fine for the web app itself) can't be reached for the MCP connection. See <a href="#security">Security</a> for how that's hardened for exactly this.</p>
 
 <pre class="code-block"><span class="comment"># Claude Code — command is pre-filled in Settings, ready to copy</span>
 <span class="key">claude mcp add</span> --transport http claunote \
@@ -518,6 +519,14 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
     <div class="feature-row">
       <div class="feature-icon">&#128737;</div>
       <div><h3>Non-root, patched weekly</h3><p>Both images run as an unprivileged user, and rebuild on a weekly schedule so OS-level security patches land even without an app change.</p></div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon">&#128272;</div>
+      <div><h3>Enforced password strength</h3><p>Minimum 10 characters with an upper/lower/digit/symbol mix, checked on first boot and every later change &mdash; not just a length count.</p></div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon">&#128274;</div>
+      <div><h3>Optional two-factor authentication</h3><p>Standard TOTP, set up from Settings with a QR code &mdash; plus one-time backup codes, Argon2id-hashed, for account recovery if you lose the authenticator.</p></div>
     </div>
   </div>
 </section>
