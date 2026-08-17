@@ -243,7 +243,7 @@ impl Auth {
 
 /// Compares two byte strings in constant time, regardless of where they
 /// first differ, to avoid leaking length/content via response timing.
-fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         // Still walk a full comparison of equal length so this branch
         // doesn't return meaningfully faster than the equal-length path.

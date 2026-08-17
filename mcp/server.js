@@ -2,11 +2,15 @@
 // claude.ai custom connectors, Claude Desktop) over the Model Context
 // Protocol's Streamable HTTP transport.
 //
-// It is a thin client of the Claunote HTTP API: it logs in with the
-// same NOTES_USERNAME/NOTES_PASSWORD as the web app and goes through
-// the same endpoints, so search indexing, title sanitization, and
-// collision handling all behave exactly as they do in the app. It
-// never touches the notes directory directly.
+// It is a thin client of the Claunote HTTP API: every call it makes
+// carries its own bearer token straight through to the app (the app
+// accepts that same token as an alternative to a session cookie, but
+// only on note/search/file endpoints — never account or settings
+// changes), so search indexing, title sanitization, and collision
+// handling all behave exactly as they do in the app. It never touches
+// the notes directory directly, and it never knows your login
+// password - changing that from the app's Settings panel can't break
+// this server, because it was never involved.
 //
 // Unlike Notespice's version of this (optional, off by default, token
 // optional — built for trusted local/tailnet use), this server assumes
@@ -16,8 +20,6 @@
 //
 // Environment:
 //   NOTES_URL          base URL of the Claunote app   (default http://claunote:8080)
-//   NOTES_USERNAME     login username                 (default admin)
-//   NOTES_PASSWORD     login password                 (required)
 //   MCP_PORT           port to listen on               (default 4200)
 //   MCP_SETTINGS_FILE  path to the token + connect/disconnect switch
 //                      managed by the app's Settings panel (default
@@ -45,8 +47,6 @@ const {
 } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
 
 const BASE = (process.env.NOTES_URL || "http://claunote:8080").replace(/\/+$/, "");
-const USERNAME = process.env.NOTES_USERNAME || "admin";
-const PASSWORD = process.env.NOTES_PASSWORD;
 const PORT = parseInt(process.env.MCP_PORT || "4200", 10);
 const SETTINGS_FILE = process.env.MCP_SETTINGS_FILE || "/data/.mcp_settings.json";
 const TOKEN_ENV = process.env.MCP_TOKEN || "";
@@ -67,10 +67,6 @@ function currentSettings() {
   return { token: TOKEN_ENV, enabled: true };
 }
 
-if (!PASSWORD) {
-  console.error("NOTES_PASSWORD is required (same credentials as the web app)");
-  process.exit(1);
-}
 if (!currentSettings().token || currentSettings().token.length < 20) {
   console.error(
     "No usable MCP token found (checked " +
@@ -84,34 +80,15 @@ if (!currentSettings().token || currentSettings().token.length < 20) {
 }
 
 // ---------- Claunote API client ----------
-let cookie = null;
+// The same token this server checks incoming /mcp requests against is
+// also what it presents to the app - it's both this server's own
+// credential and the thing it authenticates its callers with.
 
-async function login() {
-  const res = await fetch(`${BASE}/api/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: USERNAME, password: PASSWORD }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Claunote login failed (${res.status}): ${body}`);
-  }
-  const setCookie = res.headers.get("set-cookie");
-  if (!setCookie) throw new Error("Claunote login returned no session cookie");
-  cookie = setCookie.split(";")[0];
-}
-
-async function api(path, opts = {}, retry = true) {
-  if (!cookie) await login();
-  const res = await fetch(`${BASE}/api${path}`, {
+async function api(path, opts = {}) {
+  return fetch(`${BASE}/api${path}`, {
     ...opts,
-    headers: { ...(opts.headers || {}), Cookie: cookie },
+    headers: { ...(opts.headers || {}), Authorization: `Bearer ${currentSettings().token}` },
   });
-  if (res.status === 401 && retry) {
-    cookie = null;
-    return api(path, opts, false);
-  }
-  return res;
 }
 
 async function apiJson(path, opts = {}) {

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.1 — 2026-08-17
+
+Fixes a real bug found right after 0.3.0 shipped: changing the
+account password from Settings broke the MCP server, because it was
+logging in as you (via `NOTES_USERNAME`/`NOTES_PASSWORD`) to talk to
+the app, and those went stale the moment the password changed.
+
+- The MCP server no longer knows or needs your login password at all.
+  It authenticates to the app with its own bearer token directly -
+  the same token clients use to authenticate to *it* - so a password
+  change from Settings can never touch it again.
+- The app now accepts that MCP token as an alternative to a session
+  cookie, but scoped to note/search/file endpoints only. Verified
+  directly against the live deployment that the same token gets a
+  clean 401 on `/api/account` and `/api/mcp-settings` - it can't be
+  used to change the password or its own token even if it leaked.
+- `docker-compose.yml`'s `claunote-mcp` service no longer needs
+  `NOTES_USERNAME`/`NOTES_PASSWORD` at all.
+
 ## 0.3.0 — 2026-08-17
 
 A Settings panel (gear icon in the sidebar) — no more editing

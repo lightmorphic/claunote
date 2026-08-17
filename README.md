@@ -176,12 +176,16 @@ packages are set to public in the repo's Packages tab if you want to
 
 A companion container exposes your notes to Claude over the
 [Model Context Protocol](https://modelcontextprotocol.io) (Streamable
-HTTP transport). It's a thin client of Claunote's own API: it logs in
-with the same credentials as the web app and goes through the same
-endpoints, so search indexing, title sanitization, and collision
-handling behave exactly as in the app. Tools exposed: `list_notes`,
-`read_note`, `search_notes`, `create_note`, `update_note`,
-`append_to_note`, `delete_note`.
+HTTP transport). It's a thin client of Claunote's own API: every
+request carries its own bearer token straight through to the app
+(accepted as an alternative to a session cookie, but only on
+note/search/file endpoints — never account or settings changes), and
+goes through the same endpoints as the web app, so search indexing,
+title sanitization, and collision handling behave exactly as in the
+app. It never knows your login password, so changing it from Settings
+can never break this server. Tools exposed: `list_notes`, `read_note`,
+`search_notes`, `create_note`, `update_note`, `append_to_note`,
+`delete_note`.
 
 **Everything is set up from inside the app — the gear icon in the
 sidebar opens Settings.** No token to generate or paste into
@@ -218,8 +222,6 @@ directly):
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `NOTES_URL` | no | `http://claunote:8080` | Base URL of the Claunote app |
-| `NOTES_USERNAME` | no | `admin` | Same login as the web app |
-| `NOTES_PASSWORD` | **yes** | — | Same password as the web app |
 | `MCP_PORT` | no | `4200` | Port the MCP server listens on |
 | `MCP_SETTINGS_FILE` | no | `/data/.mcp_settings.json` | Where the token + connect switch live, managed by the app's Settings panel. Normal setups just mount the shared volume here — see `docker-compose.yml`. |
 | `MCP_TOKEN` | no | — | Explicit token override, used only if `MCP_SETTINGS_FILE` isn't readable (i.e. the data volume isn't shared). No connect/disconnect switch in this mode — always on. |
@@ -315,7 +317,10 @@ to disclose something new.
 - The MCP server (see [Claude integration (MCP)](#claude-integration-mcp))
   requires a bearer token — the container won't start without one —
   checked in constant time, plus its own per-IP rate limit independent
-  of whatever the reverse proxy already does.
+  of whatever the reverse proxy already does. That token only ever
+  grants note/search/file access: the app checks it against a
+  separate code path from the session cookie, so it can't be used to
+  reach the account or Settings endpoints even if it leaked.
 
 ## Export / Import
 

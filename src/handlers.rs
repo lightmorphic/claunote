@@ -19,7 +19,10 @@ fn session_token_from_headers(headers: &HeaderMap) -> Option<String> {
 /// Extractor-free auth check, called at the top of every protected
 /// handler. Kept as an explicit call (rather than an axum middleware
 /// extractor) so it's obvious, reading any single handler, exactly what
-/// gates access to it.
+/// gates access to it. Session cookie only - used for account changes
+/// and MCP settings management themselves, where an MCP client
+/// shouldn't be able to reach in and change its own token or the
+/// account password just because it holds a valid note-access token.
 pub fn require_auth(state: &AppState, headers: &HeaderMap) -> Result<(), Response> {
     let token = session_token_from_headers(headers);
     let ok = token
@@ -31,6 +34,31 @@ pub fn require_auth(state: &AppState, headers: &HeaderMap) -> Result<(), Respons
     } else {
         Err((StatusCode::UNAUTHORIZED, "not logged in").into_response())
     }
+}
+
+/// Same as `require_auth`, but also accepts the MCP bearer token as an
+/// alternative to a session cookie - used for note/file/search/export
+/// endpoints only. This is what lets the MCP companion container talk
+/// to the app directly with its own token instead of logging in with
+/// the human account's username/password, so a password change from
+/// Settings can never break it (it doesn't touch the account at all).
+/// The MCP token grants nothing beyond this - it's checked against
+/// nothing but this function, never against require_auth.
+pub fn require_data_access(state: &AppState, headers: &HeaderMap) -> Result<(), Response> {
+    if let Some(header_value) = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+    {
+        if let Some(given) = header_value.strip_prefix("Bearer ") {
+            if let Ok(settings) = state.store.mcp_settings() {
+                if settings.enabled && auth::constant_time_eq(given.as_bytes(), settings.token.as_bytes())
+                {
+                    return Ok(());
+                }
+            }
+        }
+    }
+    require_auth(state, headers)
 }
 
 #[derive(Serialize)]
@@ -208,7 +236,7 @@ pub struct NoteMetaOut {
 }
 
 pub async fn list_notes(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     match state.store.list() {
@@ -253,7 +281,7 @@ pub async fn get_note(
     headers: HeaderMap,
     axum::extract::Path(title): axum::extract::Path<String>,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     match state.store.read(&title) {
@@ -276,7 +304,7 @@ pub async fn create_note(
     headers: HeaderMap,
     Json(body): Json<CreateNoteRequest>,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     let title = match crate::store::sanitize_title(&body.title) {
@@ -307,7 +335,7 @@ pub async fn update_note(
     axum::extract::Path(title): axum::extract::Path<String>,
     Json(body): Json<UpdateNoteRequest>,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     if !state.store.exists(&title) {
@@ -342,7 +370,7 @@ pub async fn delete_note(
     headers: HeaderMap,
     axum::extract::Path(title): axum::extract::Path<String>,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     if let Err(e) = state.store.delete(&title) {
@@ -370,7 +398,7 @@ pub async fn search_notes(
     headers: HeaderMap,
     Query(params): Query<SearchParams>,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     let results = state
@@ -408,7 +436,7 @@ pub async fn upload_file(
     headers: HeaderMap,
     mut multipart: axum::extract::Multipart,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
 
@@ -452,7 +480,7 @@ pub async fn get_file(
     // attachments get the same access control as the notes themselves
     // - nothing is reachable by a logged-out visitor just because it's
     // an <img> tag rather than a fetch() call.
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
     match state.store.read_file(&filename) {
@@ -498,7 +526,7 @@ fn today_ymd() -> (i64, u32, u32) {
 }
 
 pub async fn export_notes(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
 
@@ -560,7 +588,7 @@ pub async fn import_notes(
     headers: HeaderMap,
     mut multipart: axum::extract::Multipart,
 ) -> Response {
-    if let Err(resp) = require_auth(&state, &headers) {
+    if let Err(resp) = require_data_access(&state, &headers) {
         return resp;
     }
 

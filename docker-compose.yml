@@ -53,8 +53,9 @@ services:
     restart: unless-stopped
     environment:
       NOTES_URL: "http://claunote:8080"
-      NOTES_USERNAME: "admin"
-      NOTES_PASSWORD: "changeMe!" # must match the app's password above
+      # No username/password needed - this server authenticates to
+      # the app with its own bearer token (below), never the account
+      # login, so a password change from Settings can never break it.
       # MCP_TOKEN: "openssl rand -hex 32 output here"  # only if NOT
       # mounting /data below - an explicit override for setups that
       # don't share the app's data volume. Normally leave this unset
