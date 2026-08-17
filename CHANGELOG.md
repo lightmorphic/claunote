@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2 — 2026-08-17
+
+New icon, replacing the single blank page inherited from Notespice: a
+fanned stack of three note cards with text lines, still on the
+Lightmorphic yellow. Updated everywhere it appeared - PWA icons
+(`static/icons/`), the site's favicon and hero logo, and the README
+banner (`docs/logo.png`).
+
 ## 0.3.1 — 2026-08-17
 
 Fixes a real bug found right after 0.3.0 shipped: changing the
