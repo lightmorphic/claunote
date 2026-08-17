@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.0 — 2026-08-17
+
+A Settings panel (gear icon in the sidebar) — no more editing
+`docker-compose.yml` and restarting for the things you'll actually
+want to change after first setup.
+
+- **Account**: change username and/or password from inside the app.
+  Requires the current password even though the request is already
+  authenticated (a session left open shouldn't be enough on its own
+  to lock the real owner out); on success, every session is
+  invalidated, including the one making the change. Credentials now
+  persist to `.auth.json` in `NOTES_DATA_DIR` (only the Argon2id
+  hash, never plaintext) — `NOTES_USERNAME`/`NOTES_PASSWORD` only
+  matter on the very first run, to seed that file.
+- **Claude (MCP)**: a real bearer token exists from the moment the
+  app first starts, no `openssl rand -hex 32` and manual
+  `docker-compose.yml` edit required. Settings shows it (masked, with
+  reveal/copy), the exact `claude mcp add` command pre-filled and
+  ready to copy, a **Regenerate token** button, and a
+  **Connected/Disconnected** switch that cuts off MCP access
+  instantly — even with a valid token — without touching the token
+  itself.
+- Under the hood: the MCP container now mounts the app's own data
+  volume read-only and re-reads the token/switch on every request,
+  instead of taking `MCP_TOKEN` as a fixed environment variable. A
+  change in Settings takes effect on the very next request, on both
+  sides, with nothing to restart. (`MCP_TOKEN` still works as an
+  explicit override for setups that don't share the data volume —
+  just without the connect/disconnect switch.)
+
 ## 0.2.1 — 2026-08-17
 
 - Renamed the GHCR-publishing secret from the generic `GHCR_PAT` to

@@ -105,6 +105,157 @@ el("logout-btn").addEventListener("click", async () => {
   showLogin();
 });
 
+// ---------- settings (account + MCP) ----------
+function mcpCommand(token) {
+  return `claude mcp add --transport http claunote ${window.location.origin}/mcp --header "Authorization: Bearer ${token}"`;
+}
+
+async function loadSettingsPanel() {
+  el("account-error").hidden = true;
+  el("account-current-password").value = "";
+  el("account-new-username").value = "";
+  el("account-new-password").value = "";
+
+  try {
+    const session = await apiJson("/session");
+    el("account-current-username").textContent = "Signed in as " + (session.username || "?");
+  } catch {
+    el("account-current-username").textContent = "";
+  }
+
+  el("mcp-endpoint").value = window.location.origin + "/mcp";
+  el("mcp-token").type = "password";
+  el("mcp-token-reveal").textContent = "Reveal";
+
+  try {
+    const settings = await apiJson("/mcp-settings");
+    el("mcp-token").value = settings.token;
+    el("mcp-command").value = mcpCommand(settings.token);
+    el("mcp-enabled-toggle").checked = settings.enabled;
+    el("mcp-switch-label").textContent = settings.enabled ? "Connected" : "Disconnected";
+  } catch (err) {
+    console.error("Failed to load MCP settings:", err);
+    el("mcp-token").value = "";
+    el("mcp-command").value = "";
+  }
+}
+
+el("settings-btn").addEventListener("click", () => {
+  loadSettingsPanel();
+  el("settings-dialog").showModal();
+});
+
+el("settings-close-btn").addEventListener("click", () => el("settings-dialog").close());
+
+// Enter inside a text field should never do anything but the field's
+// own default - there's no single "primary action" in this dialog to
+// submit toward (Save account vs. Regenerate token are unrelated).
+el("settings-dialog").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.tagName === "INPUT") e.preventDefault();
+});
+
+el("account-save-btn").addEventListener("click", async () => {
+  const errorEl = el("account-error");
+  errorEl.hidden = true;
+
+  const current_password = el("account-current-password").value;
+  const new_username = el("account-new-username").value.trim();
+  const new_password = el("account-new-password").value;
+
+  if (!current_password) {
+    errorEl.textContent = "current password is required";
+    errorEl.hidden = false;
+    return;
+  }
+  if (!new_username && !new_password) {
+    errorEl.textContent = "nothing to change";
+    errorEl.hidden = false;
+    return;
+  }
+
+  const body = { current_password };
+  if (new_username) body.new_username = new_username;
+  if (new_password) body.new_password = new_password;
+
+  let res;
+  try {
+    res = await fetch("/api/account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    errorEl.textContent = "could not reach the server";
+    errorEl.hidden = false;
+    return;
+  }
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: "request failed" }));
+    errorEl.textContent = errBody.error || "request failed";
+    errorEl.hidden = false;
+    return;
+  }
+
+  // The server just invalidated every session, this one included -
+  // reflect that immediately rather than waiting for the next API
+  // call to bounce with a 401.
+  el("settings-dialog").close();
+  currentTitle = null;
+  showLogin();
+  alert("Account updated. Please log in again with your new details.");
+});
+
+el("mcp-token-reveal").addEventListener("click", () => {
+  const input = el("mcp-token");
+  const revealed = input.type === "text";
+  input.type = revealed ? "password" : "text";
+  el("mcp-token-reveal").textContent = revealed ? "Reveal" : "Hide";
+});
+
+el("mcp-regenerate-btn").addEventListener("click", async () => {
+  if (!confirm("Regenerate the MCP token? Any client using the current token (Claude Code, etc.) will need reconnecting with the new one.")) {
+    return;
+  }
+  try {
+    const settings = await apiJson("/mcp-settings/regenerate", { method: "POST" });
+    el("mcp-token").value = settings.token;
+    el("mcp-token").type = "text";
+    el("mcp-token-reveal").textContent = "Hide";
+    el("mcp-command").value = mcpCommand(settings.token);
+  } catch (err) {
+    alert("Failed to regenerate token: " + err.message);
+  }
+});
+
+el("mcp-enabled-toggle").addEventListener("change", async (e) => {
+  const enabled = e.target.checked;
+  try {
+    const settings = await apiJson("/mcp-settings/connection", {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
+    });
+    el("mcp-switch-label").textContent = settings.enabled ? "Connected" : "Disconnected";
+  } catch (err) {
+    e.target.checked = !enabled; // revert the switch, the request didn't take
+    alert("Failed to update MCP connection: " + err.message);
+  }
+});
+
+document.querySelectorAll(".settings-copy-btn[data-copy-target]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const target = el(btn.dataset.copyTarget);
+    try {
+      await navigator.clipboard.writeText(target.value);
+      const original = btn.textContent;
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch {
+      target.select();
+    }
+  });
+});
+
 // ---------- export / import ----------
 el("export-btn").addEventListener("click", () => {
   window.location.href = "/api/export";

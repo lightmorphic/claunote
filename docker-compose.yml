@@ -34,15 +34,15 @@ services:
   # connectors, Claude Desktop) list, read, search, create, update,
   # and delete your notes through the Model Context Protocol.
   #
-  # Unlike a general-purpose local tool, this is meant to be reachable
-  # over the internet (behind the same reverse proxy as the app
-  # itself), so MCP_TOKEN is mandatory — the container refuses to
-  # start without one. Generate a real value before first run:
-  #   openssl rand -hex 32
+  # The token and the connect/disconnect switch both live in the
+  # app's Settings panel (gear icon in the sidebar) once it's
+  # running, not here — this container just reads them off the
+  # shared /data volume (mounted read-only) on every request. Nothing
+  # to generate or paste in by hand for a normal setup.
   #
   # Then connect Claude to  https://<your-domain>/mcp
   #   - Claude Code:  claude mcp add --transport http claunote \
-  #       https://<your-domain>/mcp --header "Authorization: Bearer <token>"
+  #       https://<your-domain>/mcp --header "Authorization: Bearer <token from Settings>"
   #   - claude.ai custom connectors can't send custom headers, so they
   #     can't use this service as configured — Claude Code and Claude
   #     Desktop (via a local http-proxy shim) are the supported paths.
@@ -55,7 +55,12 @@ services:
       NOTES_URL: "http://claunote:8080"
       NOTES_USERNAME: "admin"
       NOTES_PASSWORD: "changeMe!" # must match the app's password above
-      MCP_TOKEN: "changeMe-generate-a-real-token!" # openssl rand -hex 32
+      # MCP_TOKEN: "openssl rand -hex 32 output here"  # only if NOT
+      # mounting /data below - an explicit override for setups that
+      # don't share the app's data volume. Normally leave this unset
+      # and use the Settings panel instead.
+    volumes:
+      - /opt/claunote:/data:ro
     ports:
       - "127.0.0.1:4200:4200"
     cap_drop: [ALL]

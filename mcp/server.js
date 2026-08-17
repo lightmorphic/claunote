@@ -15,14 +15,27 @@
 // per source IP on top of whatever the reverse proxy already does.
 //
 // Environment:
-//   NOTES_URL       base URL of the Claunote app   (default http://claunote:8080)
-//   NOTES_USERNAME  login username                 (default admin)
-//   NOTES_PASSWORD  login password                 (required)
-//   MCP_PORT        port to listen on               (default 4200)
-//   MCP_TOKEN       bearer token, required. Every request to /mcp must
-//                   carry "Authorization: Bearer <token>". Generate a
-//                   long random value, e.g. `openssl rand -hex 32`.
+//   NOTES_URL          base URL of the Claunote app   (default http://claunote:8080)
+//   NOTES_USERNAME     login username                 (default admin)
+//   NOTES_PASSWORD     login password                 (required)
+//   MCP_PORT           port to listen on               (default 4200)
+//   MCP_SETTINGS_FILE  path to the token + connect/disconnect switch
+//                      managed by the app's Settings panel (default
+//                      /data/.mcp_settings.json). This is the normal
+//                      path: mount the app's own data volume here
+//                      read-only and it just works, no separate
+//                      secret to generate or copy by hand. Re-read on
+//                      every request, so a token regeneration or a
+//                      disconnect flips take effect immediately.
+//   MCP_TOKEN          bearer token, used only if MCP_SETTINGS_FILE
+//                      isn't readable — an explicit override for
+//                      setups that don't share the data volume. When
+//                      falling back to this, the connect/disconnect
+//                      switch doesn't exist; the server is always on.
+//                      Generate a long random value, e.g.
+//                      `openssl rand -hex 32`.
 
+const fs = require("fs");
 const crypto = require("crypto");
 const express = require("express");
 const { z } = require("zod");
@@ -35,17 +48,37 @@ const BASE = (process.env.NOTES_URL || "http://claunote:8080").replace(/\/+$/, "
 const USERNAME = process.env.NOTES_USERNAME || "admin";
 const PASSWORD = process.env.NOTES_PASSWORD;
 const PORT = parseInt(process.env.MCP_PORT || "4200", 10);
-const TOKEN = process.env.MCP_TOKEN || "";
+const SETTINGS_FILE = process.env.MCP_SETTINGS_FILE || "/data/.mcp_settings.json";
+const TOKEN_ENV = process.env.MCP_TOKEN || "";
+
+// Read fresh on every request rather than cached once at startup, so
+// a change made in the app's Settings panel takes effect on the very
+// next request instead of needing this container restarted.
+function currentSettings() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+    if (raw && typeof raw.token === "string" && raw.token) {
+      return { token: raw.token, enabled: raw.enabled !== false };
+    }
+  } catch {
+    // File missing, unreadable, or not valid JSON — fall through to
+    // the env override, which has no concept of connect/disconnect.
+  }
+  return { token: TOKEN_ENV, enabled: true };
+}
 
 if (!PASSWORD) {
   console.error("NOTES_PASSWORD is required (same credentials as the web app)");
   process.exit(1);
 }
-if (!TOKEN || TOKEN.length < 20) {
+if (!currentSettings().token || currentSettings().token.length < 20) {
   console.error(
-    "MCP_TOKEN is required and must be at least 20 characters — this server " +
-      "is meant to run reachable from the internet, unlike Notespice's " +
-      "optional/local-only version. Generate one with: openssl rand -hex 32"
+    "No usable MCP token found (checked " +
+      SETTINGS_FILE +
+      " and MCP_TOKEN) — this server is meant to run reachable from " +
+      "the internet, unlike Notespice's optional/local-only version, " +
+      "so it refuses to start without one. Mount the app's data volume " +
+      "read-only here, or set MCP_TOKEN directly."
   );
   process.exit(1);
 }
@@ -224,11 +257,11 @@ function buildServer() {
 }
 
 // ---------- constant-time bearer check ----------
-function tokenMatches(header) {
+function tokenMatches(header, expectedToken) {
   const prefix = "Bearer ";
   if (typeof header !== "string" || !header.startsWith(prefix)) return false;
   const given = Buffer.from(header.slice(prefix.length));
-  const expected = Buffer.from(TOKEN);
+  const expected = Buffer.from(expectedToken);
   if (given.length !== expected.length) {
     // Still do a comparison of matching length so this branch doesn't
     // return measurably faster than the equal-length path.
@@ -278,7 +311,15 @@ app.use((req, res, next) => {
     res.status(429).json({ error: "too many requests" });
     return;
   }
-  if (!tokenMatches(req.headers.authorization)) {
+  const { token, enabled } = currentSettings();
+  // Checked even for a well-formed, correct token: disconnecting from
+  // the app's Settings panel must actually cut access, not just hide
+  // the token from the UI.
+  if (!enabled) {
+    res.status(503).json({ error: "MCP access is disconnected in Claunote's settings" });
+    return;
+  }
+  if (!tokenMatches(req.headers.authorization, token)) {
     res.status(401).json({ error: "unauthorized" });
     return;
   }

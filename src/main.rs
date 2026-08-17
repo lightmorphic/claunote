@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
     let port: u16 = env_or("NOTES_PORT", "8080").parse()?;
     let secure_cookies = env_or("NOTES_INSECURE_COOKIES", "false") != "true";
 
-    let store = Store::new(notes_dir, data_dir)?;
+    let store = Store::new(notes_dir, data_dir.clone())?;
     let search = SearchIndex::new();
 
     // Build the search index from whatever's already on disk. The
@@ -73,7 +73,13 @@ async fn main() -> anyhow::Result<()> {
     search.rebuild(loaded.iter().map(|(t, c)| (t.as_str(), c.as_str())));
     tracing::info!("indexed {} existing note(s)", loaded.len());
 
-    let auth = Auth::new(username, &password)?;
+    let auth = Auth::load_or_bootstrap(&data_dir, username, &password)?;
+
+    // Eagerly, not lazily on first Settings-panel visit: the MCP
+    // container mounts this same file read-only and needs it to exist
+    // from the moment both containers start together, not only after
+    // a human happens to open Settings first.
+    store.mcp_settings()?;
 
     let state = Arc::new(AppState {
         store,
@@ -107,7 +113,17 @@ async fn main() -> anyhow::Result<()> {
         .route("/files", post(handlers::upload_file))
         .route("/files/:filename", get(handlers::get_file))
         .route("/export", get(handlers::export_notes))
-        .route("/import", post(handlers::import_notes));
+        .route("/import", post(handlers::import_notes))
+        .route("/mcp-settings", get(handlers::get_mcp_settings))
+        .route(
+            "/mcp-settings/regenerate",
+            post(handlers::regenerate_mcp_token),
+        )
+        .route(
+            "/mcp-settings/connection",
+            post(handlers::set_mcp_connection),
+        )
+        .route("/account", post(handlers::update_account));
 
     let app = Router::new()
         .nest("/api", api)

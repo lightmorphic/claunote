@@ -5,9 +5,12 @@
 //! single-user app (arguably more, since there's no admin watching for
 //! abuse), so:
 //!
-//! - The password is never stored or compared in plaintext. It's hashed
-//!   with Argon2id (the current recommended password hash) at startup
-//!   and only the hash lives in memory.
+//! - The password is never stored or compared in plaintext. Only its
+//!   Argon2id hash is ever kept, in memory and in `.auth.json` on the
+//!   data volume (so a Settings-panel password change survives a
+//!   restart). On first run this file doesn't exist yet, so
+//!   NOTES_USERNAME/NOTES_PASSWORD seed it once; every later run
+//!   ignores those env vars in favor of whatever's on disk.
 //! - Sessions are opaque random tokens, held server-side in memory and
 //!   handed to the browser as an HttpOnly, Secure, SameSite=Strict
 //!   cookie. The cookie value itself carries no information an attacker
@@ -19,7 +22,9 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use argon2::Argon2;
 use rand::rngs::OsRng;
 use rand::RngCore;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
@@ -28,28 +33,62 @@ const SESSION_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 14); // 14
 const MAX_LOGIN_ATTEMPTS: u32 = 8;
 const LOGIN_ATTEMPT_WINDOW: Duration = Duration::from_secs(15 * 60);
 
-pub struct Auth {
+#[derive(Serialize, Deserialize, Clone)]
+struct Credentials {
     username: String,
     password_hash: String,
+}
+
+pub struct Auth {
+    credentials: RwLock<Credentials>,
+    // Where credentials.json lives - the Settings panel changes
+    // username/password at runtime, unlike the rest of this app's
+    // config, so it needs somewhere durable to persist a change
+    // instead of only ever reflecting whatever NOTES_USERNAME/
+    // NOTES_PASSWORD were at container start.
+    credentials_path: PathBuf,
     sessions: RwLock<HashMap<String, Instant>>,
     login_attempts: RwLock<HashMap<String, (u32, Instant)>>,
 }
 
 impl Auth {
-    /// Hashes the configured plaintext password once at startup. The
-    /// plaintext is dropped immediately after; only the Argon2 hash is
-    /// ever kept in memory.
-    pub fn new(username: String, plaintext_password: &str) -> anyhow::Result<Self> {
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-        let password_hash = argon2
-            .hash_password(plaintext_password.as_bytes(), &salt)
-            .map_err(|e| anyhow::anyhow!("failed to hash configured password: {e}"))?
-            .to_string();
+    /// On first run, hashes NOTES_USERNAME/NOTES_PASSWORD and persists
+    /// them to `data_dir/.auth.json` - the plaintext password is
+    /// dropped immediately after, only the Argon2 hash is ever kept in
+    /// memory or on disk. On every later run, the env vars are ignored
+    /// in favor of whatever's in that file, since the Settings panel
+    /// may have since changed it - editing docker-compose.yml's
+    /// NOTES_PASSWORD after the first run has no effect, by design.
+    pub fn load_or_bootstrap(
+        data_dir: &std::path::Path,
+        env_username: String,
+        env_password: &str,
+    ) -> anyhow::Result<Self> {
+        let credentials_path = data_dir.join(".auth.json");
+        let credentials = match std::fs::read_to_string(&credentials_path) {
+            Ok(json) => serde_json::from_str(&json)
+                .map_err(|e| anyhow::anyhow!("corrupt {}: {e}", credentials_path.display()))?,
+            Err(_) => {
+                let salt = SaltString::generate(&mut OsRng);
+                let password_hash = Argon2::default()
+                    .hash_password(env_password.as_bytes(), &salt)
+                    .map_err(|e| anyhow::anyhow!("failed to hash configured password: {e}"))?
+                    .to_string();
+                let creds = Credentials {
+                    username: env_username,
+                    password_hash,
+                };
+                let json = serde_json::to_string(&creds)?;
+                std::fs::write(&credentials_path, json).map_err(|e| {
+                    anyhow::anyhow!("writing {}: {e}", credentials_path.display())
+                })?;
+                creds
+            }
+        };
 
         Ok(Self {
-            username,
-            password_hash,
+            credentials: RwLock::new(credentials),
+            credentials_path,
             sessions: RwLock::new(HashMap::new()),
             login_attempts: RwLock::new(HashMap::new()),
         })
@@ -101,8 +140,9 @@ impl Auth {
             return None;
         }
 
-        let username_ok = constant_time_eq(username.as_bytes(), self.username.as_bytes());
-        let password_ok = PasswordHash::new(&self.password_hash)
+        let creds = self.credentials.read().unwrap().clone();
+        let username_ok = constant_time_eq(username.as_bytes(), creds.username.as_bytes());
+        let password_ok = PasswordHash::new(&creds.password_hash)
             .ok()
             .map(|hash| {
                 Argon2::default()
@@ -118,6 +158,52 @@ impl Auth {
             self.record_failed_attempt(client_key);
             None
         }
+    }
+
+    /// Changes username and/or password, verifying `current_password`
+    /// first regardless of whether the caller already has a valid
+    /// session - a session left open on a shared machine shouldn't be
+    /// enough on its own to lock the real owner out. Persists to disk
+    /// and invalidates every session (including the caller's) so the
+    /// change takes effect everywhere immediately, forcing a fresh
+    /// login with the new credentials.
+    pub fn change_credentials(
+        &self,
+        current_password: &str,
+        new_username: Option<String>,
+        new_password: Option<String>,
+    ) -> Result<(), &'static str> {
+        let current = self.credentials.read().unwrap().clone();
+        let current_ok = PasswordHash::new(&current.password_hash)
+            .ok()
+            .map(|hash| {
+                Argon2::default()
+                    .verify_password(current_password.as_bytes(), &hash)
+                    .is_ok()
+            })
+            .unwrap_or(false);
+        if !current_ok {
+            return Err("current password is incorrect");
+        }
+
+        let mut updated = current;
+        if let Some(username) = new_username {
+            updated.username = username;
+        }
+        if let Some(password) = new_password {
+            let salt = SaltString::generate(&mut OsRng);
+            updated.password_hash = Argon2::default()
+                .hash_password(password.as_bytes(), &salt)
+                .map_err(|_| "failed to hash new password")?
+                .to_string();
+        }
+
+        let json = serde_json::to_string(&updated).map_err(|_| "failed to serialize credentials")?;
+        std::fs::write(&self.credentials_path, json).map_err(|_| "failed to persist credentials")?;
+
+        *self.credentials.write().unwrap() = updated;
+        self.sessions.write().unwrap().clear();
+        Ok(())
     }
 
     fn create_session(&self) -> String {
@@ -148,6 +234,10 @@ impl Auth {
 
     pub fn logout(&self, token: &str) {
         self.sessions.write().unwrap().remove(token);
+    }
+
+    pub fn username(&self) -> String {
+        self.credentials.read().unwrap().username.clone()
     }
 }
 

@@ -94,8 +94,109 @@ pub async fn session_status(State(state): State<Arc<AppState>>, headers: HeaderM
     Json(serde_json::json!({
         "logged_in": logged_in,
         "version": env!("CARGO_PKG_VERSION"),
+        "username": if logged_in { Some(state.auth.username()) } else { None },
     }))
     .into_response()
+}
+
+// ---------- MCP settings ----------
+// The MCP server is a separate container with no login of its own -
+// it reads this same file off the shared data volume (mounted
+// read-only on its side) on every request, so every change here takes
+// effect immediately with no restart on either side.
+
+pub async fn get_mcp_settings(State(state): State<Arc<AppState>>, headers: HeaderMap) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.store.mcp_settings() {
+        Ok(s) => Json(s).into_response(),
+        Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+    }
+}
+
+/// Rotates the token, leaving connect/disconnect state untouched.
+/// There's no way to set it to a chosen value, only generate a new
+/// random one, so a leaked token can always be killed without knowing
+/// what it was.
+pub async fn regenerate_mcp_token(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.store.regenerate_mcp_token() {
+        Ok(s) => Json(s).into_response(),
+        Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct McpConnectionRequest {
+    enabled: bool,
+}
+
+/// The Settings panel's connect/disconnect switch. Disabling doesn't
+/// touch the token (so re-enabling later doesn't force reconnecting
+/// every client with a new one) - the MCP server just refuses every
+/// request while disabled, regardless of whether the token is valid.
+pub async fn set_mcp_connection(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<McpConnectionRequest>,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    match state.store.set_mcp_enabled(body.enabled) {
+        Ok(s) => Json(s).into_response(),
+        Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+    }
+}
+
+// ---------- account settings ----------
+
+#[derive(Deserialize)]
+pub struct AccountUpdateRequest {
+    current_password: String,
+    new_username: Option<String>,
+    new_password: Option<String>,
+}
+
+/// Changes the login username and/or password. Requires the current
+/// password even though the request is already authenticated by
+/// session cookie - a stolen/left-open session shouldn't be enough on
+/// its own to lock the real owner out. On success every session
+/// (including the one making this request) is invalidated, so the new
+/// credentials take effect immediately everywhere.
+pub async fn update_account(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(body): Json<AccountUpdateRequest>,
+) -> Response {
+    if let Err(resp) = require_auth(&state, &headers) {
+        return resp;
+    }
+    if body.new_username.is_none() && body.new_password.is_none() {
+        return err(StatusCode::BAD_REQUEST, "nothing to change");
+    }
+    if let Some(pw) = &body.new_password {
+        if pw.len() < 8 {
+            return err(
+                StatusCode::BAD_REQUEST,
+                "new password must be at least 8 characters",
+            );
+        }
+    }
+    match state.auth.change_credentials(
+        &body.current_password,
+        body.new_username,
+        body.new_password,
+    ) {
+        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Err(msg) => err(StatusCode::UNAUTHORIZED, msg),
+    }
 }
 
 // ---------- note endpoints ----------

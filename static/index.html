@@ -57,6 +57,10 @@
         <button id="import-btn" class="sidebar-text-btn">Import</button>
         <input type="file" id="import-file-input" accept=".md,.zip" style="display:none" />
       </div>
+      <button id="settings-btn" class="sidebar-text-btn settings-btn" title="Settings">
+        <svg viewBox="0 0 20 20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 2.5h3.2l.5 2.1a6 6 0 0 1 1.5.87l2.1-.7 1.6 2.77-1.6 1.44a6 6 0 0 1 0 1.74l1.6 1.44-1.6 2.77-2.1-.7a6 6 0 0 1-1.5.87l-.5 2.1H8.4l-.5-2.1a6 6 0 0 1-1.5-.87l-2.1.7-1.6-2.77 1.6-1.44a6 6 0 0 1 0-1.74L2.7 7.28l1.6-2.77 2.1.7a6 6 0 0 1 1.5-.87z"/><circle cx="10" cy="10" r="2.4"/></svg>
+        Settings
+      </button>
       <button id="logout-btn" class="logout-btn">Log out</button>
       <a id="version-link" class="version-link"
          href="https://github.com/lightmorphic/claunote"
@@ -122,6 +126,76 @@
       <svg viewBox="0 0 20 20" stroke-width="2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>
       <span>New note</span>
     </button>
+
+    <!-- Settings: account (username/password) and the MCP connection
+         (connect/disconnect switch, bearer token, ready-to-copy
+         connect command) - everything that used to require editing
+         docker-compose.yml and restarting, now changeable live. -->
+    <dialog id="settings-dialog" class="settings-dialog">
+      <div class="settings-form">
+        <div class="settings-header">
+          <h2>Settings</h2>
+          <button type="button" id="settings-close-btn" class="icon-btn settings-close" aria-label="Close settings">
+            <svg viewBox="0 0 20 20" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
+          </button>
+        </div>
+
+        <section class="settings-section">
+          <h3>Account</h3>
+          <p id="account-current-username" class="settings-hint"></p>
+          <label>
+            Current password
+            <input type="password" id="account-current-password" autocomplete="current-password" />
+          </label>
+          <label>
+            New username <span class="settings-optional">(optional)</span>
+            <input type="text" id="account-new-username" autocomplete="username" />
+          </label>
+          <label>
+            New password <span class="settings-optional">(optional, min. 8 characters)</span>
+            <input type="password" id="account-new-password" autocomplete="new-password" />
+          </label>
+          <p id="account-error" class="error" hidden></p>
+          <button type="button" id="account-save-btn" class="settings-btn-primary">Save account changes</button>
+          <p class="settings-hint">Saving signs you out everywhere, including here - you'll need to log back in with the new details.</p>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-header">
+            <h3>Claude (MCP)</h3>
+            <label class="mcp-switch">
+              <input type="checkbox" id="mcp-enabled-toggle" />
+              <span class="mcp-switch-track"><span class="mcp-switch-thumb"></span></span>
+              <span id="mcp-switch-label">Connected</span>
+            </label>
+          </div>
+          <p class="settings-hint">When disconnected, the MCP server refuses every request, even with a valid token - no need to regenerate anything just to cut access temporarily.</p>
+          <label>
+            Endpoint
+            <div class="settings-copy-row">
+              <input type="text" id="mcp-endpoint" readonly />
+              <button type="button" class="settings-copy-btn" data-copy-target="mcp-endpoint">Copy</button>
+            </div>
+          </label>
+          <label>
+            Bearer token
+            <div class="settings-copy-row">
+              <input type="password" id="mcp-token" readonly />
+              <button type="button" id="mcp-token-reveal" class="settings-copy-btn">Reveal</button>
+              <button type="button" class="settings-copy-btn" data-copy-target="mcp-token">Copy</button>
+            </div>
+          </label>
+          <button type="button" id="mcp-regenerate-btn" class="settings-btn-danger">Regenerate token</button>
+          <label>
+            Claude Code connect command
+            <div class="settings-copy-row">
+              <textarea id="mcp-command" class="settings-command" readonly rows="2"></textarea>
+              <button type="button" class="settings-copy-btn" data-copy-target="mcp-command">Copy</button>
+            </div>
+          </label>
+        </section>
+      </div>
+    </dialog>
   </div>
 
   <script src="/app.js"></script>

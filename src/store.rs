@@ -426,4 +426,71 @@ impl Store {
         let path = self.resolve_file_path(&safe)?;
         std::fs::read(&path).with_context(|| format!("file '{filename}' not found"))
     }
+
+    // ---------- MCP settings ----------
+    // Lives in app_data_root (not the notes vault) alongside
+    // .recent.json - it's app bookkeeping, not a note. The MCP
+    // container mounts the same directory read-only and reads this
+    // file on every request, so a token regeneration or a
+    // connect/disconnect toggle here takes effect immediately, with no
+    // restart needed on either side.
+
+    fn mcp_settings_path(&self) -> PathBuf {
+        self.app_data_root.join(".mcp_settings.json")
+    }
+
+    /// Loads current settings, bootstrapping a fresh random token with
+    /// MCP enabled on first call if the file doesn't exist yet - so
+    /// there's always a working token with no explicit setup step.
+    pub fn mcp_settings(&self) -> Result<McpSettings> {
+        match std::fs::read_to_string(self.mcp_settings_path()) {
+            Ok(json) => serde_json::from_str(&json)
+                .with_context(|| format!("corrupt {}", self.mcp_settings_path().display())),
+            Err(_) => self.write_mcp_settings(McpSettings {
+                token: generate_mcp_token(),
+                enabled: true,
+            }),
+        }
+    }
+
+    fn write_mcp_settings(&self, settings: McpSettings) -> Result<McpSettings> {
+        let json = serde_json::to_string(&settings)?;
+        std::fs::write(self.mcp_settings_path(), json)
+            .with_context(|| "writing MCP settings".to_string())?;
+        Ok(settings)
+    }
+
+    /// Generates a fresh random token, keeping the current enabled/
+    /// disabled state untouched. Any client using the old token is
+    /// immediately locked out - this is the intended way to revoke a
+    /// leaked or no-longer-needed one.
+    pub fn regenerate_mcp_token(&self) -> Result<McpSettings> {
+        let enabled = self.mcp_settings()?.enabled;
+        self.write_mcp_settings(McpSettings {
+            token: generate_mcp_token(),
+            enabled,
+        })
+    }
+
+    /// Turns MCP access on or off without touching the token, so
+    /// re-enabling later doesn't require reconnecting every client
+    /// with a new token.
+    pub fn set_mcp_enabled(&self, enabled: bool) -> Result<McpSettings> {
+        let token = self.mcp_settings()?.token;
+        self.write_mcp_settings(McpSettings { token, enabled })
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct McpSettings {
+    pub token: String,
+    pub enabled: bool,
+}
+
+fn generate_mcp_token() -> String {
+    use rand::rngs::OsRng;
+    use rand::RngCore;
+    let mut bytes = [0u8; 32];
+    OsRng.fill_bytes(&mut bytes);
+    base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, bytes)
 }

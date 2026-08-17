@@ -393,11 +393,12 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
   <p class="eyebrow">Built for Claude</p>
   <h2>A companion MCP server, not a copy-paste workaround.</h2>
   <p class="lead">Claunote ships a second, purpose-built container that speaks the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> &mdash; it's a thin client of Claunote's own API, so every tool call goes through the exact same search indexing, title handling, and collision rules as the web app itself.</p>
+  <p class="lead">Nothing to generate by hand: open Settings (the gear icon in the sidebar) and a bearer token is already waiting, along with the exact connect command, a one-click regenerate, and a Connected/Disconnected switch that cuts off access instantly without touching the token itself.</p>
 
-<pre class="code-block"><span class="comment"># Claude Code</span>
+<pre class="code-block"><span class="comment"># Claude Code — command is pre-filled in Settings, ready to copy</span>
 <span class="key">claude mcp add</span> --transport http claunote \
   https://your-domain/mcp \
-  --header <span class="str">"Authorization: Bearer &lt;your-token&gt;"</span></pre>
+  --header <span class="str">"Authorization: Bearer &lt;from Settings&gt;"</span></pre>
 
   <div class="feature-rows">
     <div class="feature-row">
@@ -430,7 +431,7 @@ footer .credit { color: var(--text-muted); font-size: 13px; margin-top: 16px; }
     </div>
   </div>
 
-  <p class="lead" style="margin-top: 24px;">Notespice had an experimental version of this &mdash; optional, off by default, token optional, meant for a trusted home network. Claunote's is the opposite default: the bearer token is <strong>mandatory</strong> (the container won't start without one), checked in constant time, with its own rate limit on top of whatever the reverse proxy already does. See <a href="#security">Security</a> for the rest.</p>
+  <p class="lead" style="margin-top: 24px;">Notespice had an experimental version of this &mdash; optional, off by default, a token you generated and pasted in by hand, meant for a trusted home network. Claunote's is the opposite default: a token exists from the moment it starts, checked in constant time, with its own rate limit and a connect/disconnect switch on top of whatever the reverse proxy already does. See <a href="#security">Security</a> for the rest.</p>
 </section>
 
 <hr />

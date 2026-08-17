@@ -183,25 +183,32 @@ handling behave exactly as in the app. Tools exposed: `list_notes`,
 `read_note`, `search_notes`, `create_note`, `update_note`,
 `append_to_note`, `delete_note`.
 
-Unlike a purely local tool, this is built assuming the port may end up
-reachable over the internet, so **`MCP_TOKEN` is mandatory** — the
-container refuses to start without one, and it's checked in constant
-time. Generate a real value before first run:
+**Everything is set up from inside the app — the gear icon in the
+sidebar opens Settings.** No token to generate or paste into
+`docker-compose.yml` by hand: opening Settings for the first time
+already has a real bearer token waiting (generated automatically),
+plus:
 
-```bash
-openssl rand -hex 32
-```
+- The exact `claude mcp add` command, pre-filled with your real
+  endpoint and token, ready to copy
+- **Regenerate token** — rotates it instantly; any client using the
+  old one is locked out immediately, no restart needed
+- A **Connected / Disconnected** switch — cuts off all MCP access
+  instantly (even with a valid token) without touching the token
+  itself, so re-enabling later doesn't mean reconnecting every client
 
-Put that value in the `claunote-mcp` service's `MCP_TOKEN`, and
-configure your Claude client to send it as a bearer token — the two
-must match exactly. `NOTES_PASSWORD` for `claunote-mcp` must also
-match the app's own `NOTES_PASSWORD`, same as before.
+This works because the MCP container mounts the app's own data volume
+**read-only** and re-reads the token/switch on every request — so a
+change in Settings takes effect on the very next request, on both
+sides, with nothing to restart. `docker-compose.yml` only wires up
+that shared volume; there's no secret to fill in there for a normal
+setup.
 
 **Connect Claude** to `https://<your-domain>/mcp` (put port 4200
 behind the same reverse proxy/TLS as the app — never expose it
 directly):
 
-- **Claude Code:**
+- **Claude Code:** paste the command straight from Settings, or:
   `claude mcp add --transport http claunote https://<your-domain>/mcp --header "Authorization: Bearer <token>"`
 - **claude.ai (Chat) custom connectors cannot send custom headers**, so
   they can't authenticate to this server as configured. Claude Code
@@ -214,16 +221,29 @@ directly):
 | `NOTES_USERNAME` | no | `admin` | Same login as the web app |
 | `NOTES_PASSWORD` | **yes** | — | Same password as the web app |
 | `MCP_PORT` | no | `4200` | Port the MCP server listens on |
-| `MCP_TOKEN` | **yes** | — | Bearer token, min. 20 characters. The container will not start without one. |
+| `MCP_SETTINGS_FILE` | no | `/data/.mcp_settings.json` | Where the token + connect switch live, managed by the app's Settings panel. Normal setups just mount the shared volume here — see `docker-compose.yml`. |
+| `MCP_TOKEN` | no | — | Explicit token override, used only if `MCP_SETTINGS_FILE` isn't readable (i.e. the data volume isn't shared). No connect/disconnect switch in this mode — always on. |
+
+## Account settings
+
+Username and password are also managed from the Settings panel (gear
+icon in the sidebar) once the app is running — changing either there
+takes effect immediately and survives restarts, no env var or
+container edit needed. `NOTES_USERNAME`/`NOTES_PASSWORD` only matter
+once, to seed the account the very first time the app ever starts
+(with nowhere on disk yet to load credentials from); every later
+start ignores them in favor of whatever's already saved. Changing a
+password signs out every active session, including the one that made
+the change — you'll be prompted to log back in.
 
 ## Environment variables
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `NOTES_USERNAME` | no | `admin` | Login username |
-| `NOTES_PASSWORD` | **yes** | (none) | Login password (min. 8 characters). Hashed with Argon2id in memory at startup; never stored or logged in plaintext. |
+| `NOTES_USERNAME` | no | `admin` | Login username, **first run only** — see [Account settings](#account-settings) |
+| `NOTES_PASSWORD` | **yes** | (none) | Login password (min. 8 characters), **first run only**. Hashed with Argon2id; only the hash is ever stored or logged, never the plaintext. |
 | `NOTES_DIR` | no | `/notes` | Where `.md` files and their `files/` attachments live. This is the actual vault. |
-| `NOTES_DATA_DIR` | no | `/data` | Where app-only state lives (currently just the recently-viewed list). Not notes. |
+| `NOTES_DATA_DIR` | no | `/data` | Where app-only state lives (recently-viewed list, account credentials, MCP settings). Not notes, but back it up if you don't want to reconfigure Settings after a rebuild. |
 | `NOTES_PORT` | no | `8080` | Port to listen on |
 | `NOTES_INSECURE_COOKIES` | no | `false` | Set to `true` **only** for local testing over plain `http://`. Never set this in production; it removes the `Secure` flag from the session cookie. |
 
@@ -263,7 +283,10 @@ report it. The notes below are about what's already built in, not how
 to disclose something new.
 
 - Passwords are hashed with Argon2id; only the hash is ever kept in
-  memory, and it's never written to disk or logged.
+  memory or persisted to disk (`.auth.json` in `NOTES_DATA_DIR`), and
+  it's never logged. Changing the password via Settings requires the
+  current one and invalidates every session, including the one making
+  the change.
 - Sessions are opaque random tokens held server-side. The cookie
   itself carries no information, so nothing meaningful leaks if it's
   ever captured outside of TLS.
