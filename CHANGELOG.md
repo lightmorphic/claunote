@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.3 — 2026-08-17
+
+`project-docker-final` audit pass:
+
+- The MCP image is now a multi-stage build. The npm CLI ships its own
+  bundled dependency tree (`tar`, `sigstore`, `picomatch`,
+  `brace-expansion`) that isn't this app's dependencies at all, but
+  still counted toward vulnerability scans as long as npm remained in
+  the final image. `npm audit` shows 0 for the app's own tree; Trivy
+  found 8 (1 critical) coming from npm's bundled tooling alone,
+  confirmed against `package-lock.json`. Fixed by dropping npm/npx
+  from the final stage entirely (the app only ever runs
+  `node server.js`) - re-scanned clean at 0.
+- Trivy scan of the main app image: 35 findings (30 high, 5 critical),
+  all inherited Debian OS packages (perl, zlib, ncurses, util-linux),
+  none from the app's own Rust dependencies. Already covered by the
+  existing weekly rebuild; no new action needed there.
+
 ## 0.3.2 — 2026-08-17
 
 New icon, replacing the single blank page inherited from Notespice: a
